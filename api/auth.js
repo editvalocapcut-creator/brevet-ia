@@ -1,51 +1,47 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-client');
 
+// Initialisation de Supabase avec tes variables d'environnement Vercel
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY; 
-
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-export default async function handler(req, res) {
+module.exports = async function (req, res) {
+    // Configuration des en-têtes CORS pour éviter les blocages de sécurité
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const action = req.body.action;
-    const pseudo = req.body.pseudo || req.body.Pseudo;
-    const password = req.body.password || req.body.Password;
-    const subject = req.body.subject || req.body.Subject;
-    const score = req.body.score !== undefined ? req.body.score : req.body.Score;
+    const { action, pseudo, password, subject, score } = req.body;
 
     try {
+        // ==========================================
+        // 1. ACTION : CONNEXION / INSCRIPTION AUTOMATIQUE
+        // ==========================================
         if (action === 'login') {
-            if (!pseudo || !password) {
-                return res.status(400).json({ error: "Pseudo et mot de passe requis." });
-            }
-
-            const { data: users, error: fetchError } = await supabase
+            // Recherche si l'utilisateur existe déjà
+            const { data: user, error } = await supabase
                 .from('classement_brevet')
                 .select('*')
-                .eq('pseudo', pseudo);
+                .eq('pseudo', pseudo)
+                .single();
 
-            if (fetchError) {
-                return res.status(500).json({ error: "Erreur de liaison avec la base de données", details: fetchError.message });
+            if (error && error.code !== 'PGRST116') { // Ignorer l'erreur "aucun résultat"
+                return res.status(500).json({ error: "Erreur lors de la recherche du pseudo." });
             }
 
-            const user = users && users.length > 0 ? users[0] : null;
-
             if (user) {
+                // Si l'utilisateur existe, on vérifie le mot de passe
                 if (user.password === password) {
-                    return res.status(200).json({ message: "Connexion réussie", user });
+                    return res.status(200).json({ user });
                 } else {
-                    return res.status(401).json({ error: "Mot de passe incorrect pour ce pseudo." });
+                    return res.status(400).json({ error: "Mot de passe incorrect pour ce pseudo." });
                 }
             } else {
-                const { data: insertedData, error: insertError } = await supabase
+                // Si l'utilisateur n'existe pas, on le crée proprement avec toutes ses matières à 0
+                const { data: newUser, error: createError } = await supabase
                     .from('classement_brevet')
                     .insert([{ 
                         pseudo, 
@@ -53,78 +49,98 @@ export default async function handler(req, res) {
                         score_histoire: 0, 
                         score_geographie: 0, 
                         score_emc: 0, 
-                        score_sciences: 0, 
+                        score_sciences: 0,
+                        score_mathematiques: 0, // Initialisé à 0
+                        score_francais: 0,      // Initialisé à 0
                         score_total: 0 
                     }])
-                    .select();
+                    .select()
+                    .single();
 
-                if (insertError) {
-                    return res.status(500).json({ error: "Création de compte impossible", details: insertError.message });
+                if (createError) {
+                    return res.status(500).json({ error: "Impossible de créer ce nouveau compte." });
                 }
-
-                const newUser = insertedData && insertedData.length > 0 ? insertedData[0] : { pseudo, score_total: 0 };
-                return res.status(200).json({ message: "Inscription réussie", user: newUser });
+                return res.status(200).json({ user: newUser });
             }
         }
 
+        // ==========================================
+        // 2. ACTION : METTRE À JOUR LE SCORE D'UNE MATIÈRE
+        // ==========================================
         else if (action === 'updateScore') {
-            if (!pseudo || pseudo === 'undefined') {
-                return res.status(200).json({ message: "Score ignoré car l'utilisateur n'est pas connecté." });
-            }
-
-            const { data: users, error: getError } = await supabase
+            // Récupérer d'abord les scores actuels de l'élève
+            const { data: user, error: fetchError } = await supabase
                 .from('classement_brevet')
                 .select('*')
-                .eq('pseudo', pseudo);
+                .eq('pseudo', pseudo)
+                .single();
 
-            if (getError || !users || users.length === 0) {
-                return res.status(404).json({ error: "Utilisateur introuvable." });
+            if (fetchError || !user) {
+                return res.status(404).json({ error: "Utilisateur introuvable pour la mise à jour." });
             }
 
-            const user = users[0];
-            let column = 'score_histoire';
-            const cleanSubject = (subject || '').toLowerCase();
-            if (cleanSubject.includes('géo')) column = 'score_geographie';
-            if (cleanSubject.includes('emc')) column = 'score_emc';
-            if (cleanSubject.includes('science')) column = 'score_sciences';
+            // Déterminer dynamiquement quelle colonne de ta table Supabase modifier
+            let columnToUpdate = '';
+            if (subject === 'histoire') columnToUpdate = 'score_histoire';
+            else if (subject === 'géographie') columnToUpdate = 'score_geographie';
+            else if (subject === 'emc') columnToUpdate = 'score_emc';
+            else if (subject === 'sciences') columnToUpdate = 'score_sciences';
+            else if (subject === 'mathematiques') columnToUpdate = 'score_mathematiques'; // Ajouté !
+            else if (subject === 'francais') columnToUpdate = 'score_francais';           // Ajouté !
+            else {
+                columnToUpdate = 'score_histoire'; // Sécurité par défaut
+            }
 
-            const pointsToAdd = parseInt(score, 10) || 0;
-            const newSubjectScore = (user[column] || 0) + pointsToAdd;
-            const newTotalScore = (user.score_total || 0) + pointsToAdd;
+            // On ajoute les nouveaux points au score déjà existant dans cette matière
+            const currentSubjectScore = user[columnToUpdate] || 0;
+            const newSubjectScore = currentSubjectScore + parseInt(score);
 
-            const { data: updatedData, error: updateError } = await supabase
+            // On recalcule le score total général en incluant absolument TOUTES les matières
+            const newScoreTotal = 
+                (columnToUpdate === 'score_histoire' ? newSubjectScore : (user.score_histoire || 0)) +
+                (columnToUpdate === 'score_geographie' ? newSubjectScore : (user.score_geographie || 0)) +
+                (columnToUpdate === 'score_emc' ? newSubjectScore : (user.score_emc || 0)) +
+                (columnToUpdate === 'score_sciences' ? newSubjectScore : (user.score_sciences || 0)) +
+                (columnToUpdate === 'score_mathematiques' ? newSubjectScore : (user.score_mathematiques || 0)) +
+                (columnToUpdate === 'score_francais' ? newSubjectScore : (user.score_francais || 0));
+
+            // Enregistrement des nouvelles valeurs calculées dans Supabase
+            const updateData = {};
+            updateData[columnToUpdate] = newSubjectScore;
+            updateData['score_total'] = newScoreTotal;
+
+            const { data: updatedUser, error: updateError } = await supabase
                 .from('classement_brevet')
-                .update({ 
-                    [column]: newSubjectScore, 
-                    score_total: newTotalScore 
-                })
+                .update(updateData)
                 .eq('pseudo', pseudo)
-                .select();
+                .select()
+                .single();
 
             if (updateError) {
-                return res.status(500).json({ error: "Échec de l'enregistrement du score." });
+                return res.status(500).json({ error: "Échec de l'enregistrement des points." });
             }
 
-            return res.status(200).json({ message: "Score mis à jour !", user: updatedData[0] });
+            return res.status(200).json({ user: updatedUser });
         }
 
+        // ==========================================
+        // 3. ACTION : RÉCUPÉRER LE LEADERBOARD (TOP 10)
+        // ==========================================
         else if (action === 'getLeaderboard') {
-            const { data: leaderboard, error: boardError } = await supabase
+            const { data: leaderboard, error: leadError } = await supabase
                 .from('classement_brevet')
-                .select('pseudo, score_histoire, score_geographie, score_emc, score_sciences, score_total')
+                .select('*')
                 .order('score_total', { ascending: false })
                 .limit(10);
 
-            if (boardError) {
+            if (leadError) {
                 return res.status(500).json({ error: "Impossible de charger le classement." });
             }
 
             return res.status(200).json(leaderboard);
         }
 
-        return res.status(400).json({ error: "Action demandée inconnue." });
-
     } catch (err) {
-        return res.status(500).json({ error: "Erreur critique serveur", details: err.message });
+        return res.status(500).json({ error: `Erreur interne serveur : ${err.message}` });
     }
-}
+};
