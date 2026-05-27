@@ -1,13 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Alignement exact avec les noms de tes variables Vercel
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY; 
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
-    // Gestion des headers CORS pour éviter les blocages du navigateur
+    // Configuration des headers CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -17,7 +16,6 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // Récupération flexible des données (gère les minuscules et MAJUSCULES venant du HTML)
     const action = req.body.action;
     const pseudo = req.body.pseudo || req.body.Pseudo;
     const password = req.body.password || req.body.Password;
@@ -31,27 +29,27 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: "Pseudo et mot de passe requis." });
             }
 
-            // Recherche si l'utilisateur existe déjà
-            const { data: user, error: fetchError } = await supabase
+            // Recherche sans utiliser single() pour éviter les crashs 500
+            const { data: users, error: fetchError } = await supabase
                 .from('classement_brevet')
                 .select('*')
-                .eq('pseudo', pseudo)
-                .maybeSingle(); // Évite de lever une exception si aucun utilisateur n'est trouvé
+                .eq('pseudo', pseudo);
 
             if (fetchError) {
-                return res.status(500).json({ error: "Erreur lors de la recherche de l'utilisateur." });
+                return res.status(500).json({ error: "Erreur Supabase à la recherche", details: fetchError.message });
             }
 
+            const user = users && users.length > 0 ? users[0] : null;
+
             if (user) {
-                // Vérification du mot de passe
                 if (user.password === password) {
                     return res.status(200).json({ message: "Connexion réussie", user });
                 } else {
                     return res.status(401).json({ error: "Mot de passe incorrect pour ce pseudo." });
                 }
             } else {
-                // Si l'utilisateur n'existe pas, on le crée automatiquement
-                const { data: newUser, error: insertError } = await supabase
+                // Inscription : utilisation d'une syntaxe plus tolérante
+                const { data: insertedData, error: insertError } = await supabase
                     .from('classement_brevet')
                     .insert([{ 
                         pseudo, 
@@ -62,13 +60,13 @@ export default async function handler(req, res) {
                         score_sciences: 0, 
                         score_total: 0 
                     }])
-                    .select()
-                    .single();
+                    .select();
 
                 if (insertError) {
-                    return res.status(500).json({ error: "Impossible de créer le profil dans la table." });
+                    return res.status(500).json({ error: "Impossible de créer le profil", details: insertError.message });
                 }
 
+                const newUser = insertedData && insertedData.length > 0 ? insertedData[0] : { pseudo, score_total: 0 };
                 return res.status(200).json({ message: "Inscription réussie", user: newUser });
             }
         }
@@ -79,18 +77,17 @@ export default async function handler(req, res) {
                 return res.status(200).json({ message: "Score ignoré car l'utilisateur n'est pas connecté." });
             }
 
-            // Récupérer le score actuel
-            const { data: user, error: getError } = await supabase
+            const { data: users, error: getError } = await supabase
                 .from('classement_brevet')
                 .select('*')
-                .eq('pseudo', pseudo)
-                .maybeSingle();
+                .eq('pseudo', pseudo);
 
-            if (getError || !user) {
+            if (getError || !users || users.length === 0) {
                 return res.status(404).json({ error: "Utilisateur introuvable." });
             }
 
-            // Déterminer la colonne selon la matière
+            const user = users[0];
+
             let column = 'score_histoire';
             const cleanSubject = (subject || '').toLowerCase();
             if (cleanSubject.includes('géo')) column = 'score_geographie';
@@ -101,21 +98,20 @@ export default async function handler(req, res) {
             const newSubjectScore = (user[column] || 0) + pointsToAdd;
             const newTotalScore = (user.score_total || 0) + pointsToAdd;
 
-            const { data: updatedUser, error: updateError } = await supabase
+            const { data: updatedData, error: updateError } = await supabase
                 .from('classement_brevet')
                 .update({ 
                     [column]: newSubjectScore, 
                     score_total: newTotalScore 
                 })
                 .eq('pseudo', pseudo)
-                .select()
-                .single();
+                .select();
 
             if (updateError) {
                 return res.status(500).json({ error: "Échec de l'enregistrement du score." });
             }
 
-            return res.status(200).json({ message: "Score mis à jour !", user: updatedUser });
+            return res.status(200).json({ message: "Score mis à jour !", user: updatedData[0] });
         }
 
         // 3. RÉCUPÉRATION DU TOP 10
@@ -136,6 +132,6 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Action demandée inconnue." });
 
     } catch (err) {
-        return res.status(500).json({ error: `Erreur serveur : ${err.message}` });
+        return res.status(500).json({ error: "Erreur critique serveur", details: err.message });
     }
 }
