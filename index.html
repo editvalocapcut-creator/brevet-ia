@@ -118,12 +118,12 @@
             <div>
                 <label for="subject-select">Matière :</label>
                 <select id="subject-select">
-                    <option value="Histoire">Histoire</option>
-                    <option value="Géographie">Géographie</option>
-                    <option value="EMC">EMC</option>
-                    <option value="Sciences">Sciences (SVT / Physique / Techno)</option>
-                    <option value="Mathématiques">Mathématiques</option>
-                    <option value="Français">Français</option>
+                    <option value="histoire">Histoire</option>
+                    <option value="géographie">Géographie</option>
+                    <option value="emc">EMC</option>
+                    <option value="sciences">Sciences (SVT / Physique / Techno)</option>
+                    <option value="mathematiques">Mathématiques</option>
+                    <option value="francais">Français</option>
                 </select>
             </div>
             <div>
@@ -310,61 +310,3 @@
                         subject, 
                         score: pointsAttribues 
                     })
-                });
-                const saveData = await saveRes.json();
-                
-                if(saveData.user) {
-                    currentUser = saveData.user;
-                    document.getElementById('score-display').innerText = `${currentUser.score_total || 0} pts`;
-                    loadLeaderboard(); 
-                }
-            }
-        } catch(err) {
-            alert("Erreur lors de la correction.");
-        } finally {
-            btn.innerText = "Envoyer ma réponse pour correction";
-            btn.disabled = false;
-        }
-    });
-
-    async function loadLeaderboard() {
-        try {
-            const res = await fetch('/api/auth.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'getLeaderboard' })
-            });
-            const data = await res.json();
-            const leaderboardData = Array.isArray(data) ? data : (data.leaderboard || []);
-            
-            const tbody = document.getElementById('leaderboard-body');
-            tbody.innerHTML = "";
-            
-            leaderboardData.forEach((row, index) => {
-                const tr = document.createElement('tr');
-                if(currentUser && row.pseudo === currentUser.pseudo) {
-                    tr.style.fontWeight = 'bold';
-                    tr.style.backgroundColor = '#fef08a';
-                }
-                tr.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${row.pseudo}</td>
-                    <td>${row.score_histoire || 0}</td>
-                    <td>${row.score_geographie || 0}</td>
-                    <td>${row.score_emc || 0}</td>
-                    <td>${row.score_sciences || 0}</td>
-                    <td>${row.score_mathematiques || 0}</td>
-                    <td>${row.score_francais || 0}</td>
-                    <td><span class="badge">${row.score_total || 0} pts</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        } catch(err) {
-            console.error("Erreur chargement classement:", err);
-        }
-    }
-
-    document.getElementById('btn-refresh-lead').addEventListener('click', loadLeaderboard);
-</script>
-</body>
-</html>
