@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.GROK_API_KEY;
 
     if (!apiKey) {
-        return res.status(500).json({ error: "La clé API GROK_API_KEY est manquante." });
+        return res.status(500).json({ error: "La clé API GROK_API_KEY est manquante dans les variables d'environnement Vercel." });
     }
 
     try {
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
             }
         }
 
-        // CORRIGÉ : On se connecte maintenant sur le vrai serveur de Groq Cloud
+        // Appel sécurisé à Groq Cloud
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-specdec', // Modèle ultra-rapide et performant de Groq Cloud
+                model: 'llama-3.3-70b-versatile', // Modèle standard ultra-stable sur Groq Cloud
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
@@ -52,9 +52,15 @@ export default async function handler(req, res) {
 
         const groqData = await groqResponse.json();
         
+        // Si Groq renvoie une erreur (clé invalide, modèle introuvable...), on l'affiche dans les logs
+        if (groqData.error) {
+            console.error("Erreur reçue de Groq Cloud :", groqData.error);
+            return res.status(500).json({ error: groqData.error.message });
+        }
+
         if (!groqData.choices || !groqData.choices[0] || !groqData.choices[0].message) {
-            console.error("Réponse invalide de l'API Groq :", groqData);
-            return res.status(500).json({ error: "L'API a renvoyé une réponse inattendue." });
+            console.error("Structure de réponse inattendue :", groqData);
+            return res.status(500).json({ error: "Structure de réponse de l'API invalide." });
         }
 
         const responseText = groqData.choices[0].message.content;
@@ -66,7 +72,7 @@ export default async function handler(req, res) {
         }
 
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Erreur lors de la communication avec l'IA." });
+        console.error("Erreur crash handler :", error);
+        return res.status(500).json({ error: "Erreur serveur interne." });
     }
 }
