@@ -3,70 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brevet IA // Entraînement sur-mesure</title>
+    <title>Révisions Brevet IA</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="container">
+        <h1>🎓 Assistant Révisions Brevet</h1>
+        <p class="subtitle">Prépare ton examen avec l'aide d'une IA</p>
 
-    <div class="app-container">
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="logo-icon">⚡</div>
-                <h2>Brevet<span>IA</span></h2>
+        <div class="setup-box">
+            <div class="form-group">
+                <label for="subject-select">Choisis ta matière :</label>
+                <select id="subject-select">
+                    <option value="Histoire">Histoire</option>
+                    <option value="Géographie">Géographie</option>
+                    <option value="EMC">Enseignement Moral et Civique (EMC)</option>
+                    <option value="Sciences">Sciences (Physique/SVT/Techno)</option>
+                </select>
             </div>
-            <p class="sidebar-subtitle">Révisions intelligentes</p>
 
-            <nav class="subjects-nav">
-                <button class="nav-btn active" data-subject="Mathématiques">📐 Mathématiques</button>
-                <button class="nav-btn" data-subject="Français">✍️ Français</button>
-                <button class="nav-btn" data-subject="Histoire-Géographie et EMC">🌍 Histoire-Géo / EMC</button>
-                <button class="nav-btn" data-subject="Sciences (Physique, SVT, Techno)">🧪 Sciences</button>
-            </nav>
-
-            <div class="sidebar-footer">
-                <span class="status-badge">Serveur Sécurisé Actif</span>
+            <div class="form-group">
+                <label for="format-select">Format des questions :</label>
+                <select id="format-select">
+                    <option value="courte">Questions courtes (Flashcards / Quiz rapide)</option>
+                    <option value="longue">Questions détaillées (Développement rédigé)</option>
+                </select>
             </div>
-        </aside>
 
-        <main class="main-content">
-            <header class="top-bar">
-                <h1 id="current-subject">Mathématiques</h1>
-                <p class="text-muted">Exercices uniques générés en temps réel et corrigés par l'IA selon tes réponses.</p>
-            </header>
+            <button id="start-btn">Générer une question</button>
+        </div>
 
-            <div class="content-body">
-                <div class="action-card" id="start-zone">
-                    <h3>Générer un sujet type Brevet</h3>
-                    <p>Clique sur le bouton pour que l'IA conçoive un exercice original adapté à la matière choisie.</p>
-                    <button id="generate-btn" class="btn btn-primary">✨ Lancer l'exercice</button>
-                </div>
-
-                <div id="loading" class="loader-box hidden">
-                    <div class="spinner"></div>
-                    <p id="loading-text">Analyse en cours...</p>
-                </div>
-
-                <div id="exercise-card" class="card hidden">
-                    <div class="card-header"><span class="badge">Sujet Officiel IA</span></div>
-                    <div class="question-display" id="question-text"></div>
-
-                    <div class="answer-section">
-                        <label for="user-answer">Rédige ta réponse ou ton raisonnement :</label>
-                        <textarea id="user-answer" placeholder="Écris ta réponse ici de manière détaillée..."></textarea>
-                        <button id="submit-btn" class="btn btn-success">🚀 Envoyer pour correction</button>
-                    </div>
-                </div>
-
-                <div id="correction-card" class="card correction-card hidden">
-                    <div class="card-header"><span class="badge badge-accent">Correction personnalisée</span></div>
-                    <div class="correction-display" id="correction-text"></div>
-                    <button id="restart-btn" class="btn btn-secondary">Exercice suivant ➡️</button>
-                </div>
+        <div id="quiz-box" class="quiz-box hidden">
+            <div class="question-container">
+                <h3>Question :</h3>
+                <p id="question-text">Chargement de la question...</p>
             </div>
-        </main>
+
+            <div class="form-group">
+                <label for="user-answer">Ta réponse :</label>
+                <textarea id="user-answer" placeholder="Rédige ta réponse ici..."></textarea>
+            </div>
+
+            <button id="submit-btn">Corriger ma réponse</button>
+
+            <div id="correction-box" class="correction-box hidden">
+                <h3>📜 Correction de l'IA :</h3>
+                <div id="correction-text"></div>
+                <button id="next-btn">Question suivante</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
