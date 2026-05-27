@@ -7,49 +7,45 @@ export default async function handler(req, res) {
     const apiKey = process.env.GROK_API_KEY;
 
     if (!apiKey) {
-        return res.status(500).json({ error: "La clé API GROK_API_KEY est manquante." });
+        return res.status(500).json({ error: "La clé API GROK_API_KEY est manquante dans Vercel." });
     }
 
-    // Le dictionnaire complet du programme de Troisième pour forcer la variété
+    // Liste officielle du brevet pour guider l'IA sans jamais qu'elle ne se répète
     const chapitresBrevet = {
         "Histoire": [
-            "La Première Guerre mondiale et les bouleversements en Europe",
-            "Les régimes totalitaires dans les années 1930 (Nazisme, Stalinisme)",
+            "La Première Guerre mondiale et les tranchées",
+            "Les régimes totalitaires des années 1930 (Staline, Hitler)",
             "Le Front populaire en France",
-            "La Seconde Guerre mondiale, une guerre d'anéantissement",
-            "Le régime de Vichy, la Collaboration et la Résistance en France",
-            "La Guerre froide et le monde bipolaire (Berlin, Cuba)",
+            "La Seconde Guerre mondiale et la collaboration ou Résistance en France",
+            "La Guerre froide, l'Allemagne et Berlin",
             "La décolonisation et l'émergence du Tiers-Monde",
-            "La construction européenne (des traités de Rome à Maastricht)",
-            "La feuille de route de la Vème République (De Gaulle, Mitterrand, Chirac)",
-            "Les grands enjeux mondiaux depuis 1989"
+            "La construction européenne des débuts à Maastricht",
+            "La Vème République de De Gaulle à nos jours"
         ],
         "Géographie": [
-            "Les aires urbaines en France et la métropolisation",
-            "Les espaces productifs français (industriels, agricoles, touristiques)",
+            "Les aires urbaines et la métropolisation en France",
+            "Les espaces productifs français (agricole, industriel, touristique)",
             "Les espaces de faible densité et leurs atouts",
-            "Aménager le territoire français (transports, régions, inégalités)",
-            "Les territoires ultra-marins français et leurs spécificités",
-            "La France et l'Union européenne dans le monde (puissance d'influence)",
-            "L'UE, un nouveau territoire d'intégration et de coopération"
+            "Aménager le territoire français et réduire les inégalités",
+            "Les territoires ultra-marins français",
+            "La France et l'Union européenne dans le monde moderne"
         ],
         "EMC": [
-            "Les valeurs, les principes et les symboles de la République française",
-            "La citoyenneté française et européenne (droits et devoirs)",
-            "Le vote et le parcours d'une loi en France",
-            "La laïcité au collège et dans la société",
-            "La Défense nationale et le rôle de l'ONU",
-            "Les grands médias, l'information et l'esprit critique"
+            "Les valeurs, principes et symboles de la République",
+            "La citoyenneté française et le droit de vote",
+            "La laïcité au collège et dans la société républicaine",
+            "La Défense nationale, la JDC et le rôle de l'ONU",
+            "Médias, fake news et développement de l'esprit critique"
         ],
         "Sciences": [
-            "Physique : Gravitation universelle, poids et masse",
-            "Physique : L'énergie cinétique, potentielle et la sécurité routière",
-            "Physique : Circuits électriques, tension, intensité et loi d'Ohm",
-            "SVT : Le système nerveux, les neurones et les risques (sommeil, bruit)",
-            "SVT : La génétique (ADN, chromosomes, gènes, allèles et caractères)",
-            "SVT : Le système immunitaire, les microbes, vaccins et antibiotiques",
-            "Techno : Les réseaux informatiques (IP, routeur, client/serveur)",
-            "Techno : Algorithmes et programmation (capteurs, variables, boucles)"
+            "Physique : Gravitation universelle, différence poids et masse",
+            "Physique : Énergie cinétique, conversions et sécurité routière",
+            "Physique : Circuits électriques, intensité, tension et loi d'Ohm",
+            "SVT : Le système nerveux, messages argentiques et risques liés au bruit",
+            "SVT : Génétique, chromosomes, ADN, gènes et allèles",
+            "SVT : Système immunitaire, infections, lymphocytes, vaccins et antibiotiques",
+            "Techno : Réseaux informatiques, adresse IP, architecture client-serveur",
+            "Techno : Algorithmes, programmation scratch, variables et capteurs"
         ]
     };
 
@@ -58,21 +54,62 @@ export default async function handler(req, res) {
         let userPrompt = "";
 
         if (action === 'generate') {
-            // On sélectionne la liste des chapitres selon la matière choisie par l'élève
             const listeChapitres = chapitresBrevet[subject] || [];
-            // On pioche un chapitre totalement au hasard dans la liste
             const chapitreAlea = listeChapitres[Math.floor(Math.random() * listeChapitres.length)];
 
-            systemPrompt = `Tu es un professeur d'histoire-gographie, EMC et sciences expert du Brevet des collèges. 
-            Ton but absolu est de faire réviser l'ensemble du programme sans jamais te répéter.`;
+            systemPrompt = `Tu es un professeur expert du Brevet des collèges. Ton but est de générer des questions d'examen uniques pour faire réviser la totalité du programme. Ne te répète jamais.`;
 
             if (format === 'courte') {
-                userPrompt = `Génère une question COURTE et très précise (type quiz de rapidité) obligatoirement sur ce thème précis du programme de troisième : "${chapitreAlea}". 
-                La question doit exiger une réponse brève (une date, une définition, un nom ou une formule). Donne uniquement la question, sans introduction ni réponse.`;
+                userPrompt = `Génère une question de cours COURTE et super précise sur ce thème de 3ème : "${chapitreAlea}". La question doit demander un élément court (une date, une définition, une formule). Donne uniquement la question, sans introduction ni formule de politesse.`;
             } else {
-                userPrompt = `Génère un sujet de réflexion ou un développement construit (paragraphe rédigé) obligatoirement axé sur ce thème du programme : "${chapitreAlea}". 
-                Le sujet doit pousser l'élève à argumenter. Donne uniquement l'énoncé du sujet, sans introduction.`;
+                userPrompt = `Génère un sujet de réflexion ou développement construit détaillé sur ce thème de 3ème : "${chapitreAlea}". L'élève devra rédiger un paragraphe argumenté. Donne uniquement l'énoncé du sujet.`;
             }
         } 
         else if (action === 'correct') {
-            systemPrompt = `Tu es un correcteur officiel du Brevet des collèges. Tu dois corriger la réponse de l'élève de manière constructive, bienveillante mais rigoureuse. Donne une note claire (par exemple sur
+            systemPrompt = `Tu es un correcteur officiel du Brevet. Corrige la réponse de l'élève de manière constructive et rigoureuse. Donne une note sur 5 points, les points positifs, les manques et la correction idéale.`;
+
+            if (format === 'courte') {
+                userPrompt = `Matière : ${subject}\nQuestion posée : ${question}\nRéponse de l'élève : ${userAnswer}\n\nFais une correction rapide.`;
+            } else {
+                userPrompt = `Matière : ${subject}\nQuestion posée : ${question}\nRéponse de l'élève : ${userAnswer}\n\nAnalyse la structure et les arguments historiques ou scientifiques.`;
+            }
+        }
+
+        // CORRIGÉ : On appelle le vrai modèle de Groq Cloud !
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile', // Le modèle officiel et fonctionnel de ta plateforme
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.9, // Très haut pour assurer un renouvellement complet des questions
+                presence_penalty: 0.7
+            })
+        });
+
+        const groqData = await groqResponse.json();
+        
+        if (groqData.error) {
+            console.error("Erreur Groq :", groqData.error);
+            return res.status(500).json({ error: groqData.error.message });
+        }
+
+        const responseText = groqData.choices[0].message.content;
+
+        if (action === 'generate') {
+            return res.status(200).json({ question: responseText });
+        } else {
+            return res.status(200).json({ correction: responseText });
+        }
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Erreur interne du serveur." });
+    }
+}
