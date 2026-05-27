@@ -3,57 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Révisions Brevet IA</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Entraînement Brevet IA</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --background: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 { text-align: center; color: var(--primary); margin-top: 0; }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label { display: block; margin-bottom: 5px; font-weight: 600; }
+        input[type="text"], input[type="password"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        textarea { resize: vertical; height: 100px; }
+        button {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: var(--primary-hover); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .hidden { display: none !important; }
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .leaderboard-table th, .leaderboard-table td {
+            border: 1px solid #e5e7eb;
+            padding: 10px;
+            text-align: left;
+        }
+        .leaderboard-table th { background-color: #f9fafb; }
+        .badge {
+            background: #e0e7ff;
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .response-area {
+            background: #f9fafb;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-line;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎓 Assistant Révisions Brevet</h1>
-        <p class="subtitle">Prépare ton examen avec l'aide d'une IA</p>
 
-        <div class="setup-box">
-            <div class="form-group">
-                <label for="subject-select">Choisis ta matière :</label>
+<div class="container">
+    <div id="auth-screen" class="card">
+        <h1>Connexion / Inscription</h1>
+        <p style="text-align:center; color:#6b7280;">Entre un pseudo et un mot de passe. Si le compte n'existe pas, il sera créé automatiquement !</p>
+        <div class="form-group">
+            <label for="username">Pseudo :</label>
+            <input type="text" id="username" placeholder="Ex: JulesCesar3eme">
+        </div>
+        <div class="form-group">
+            <label for="password">Mot de passe :</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+        <button id="btn-auth">Se connecter / S'inscrire</button>
+        <p id="auth-error" style="color:red; text-align:center; font-weight:bold;"></p>
+    </div>
+
+    <div id="main-screen" class="card hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>Bonjour, <span id="user-display" style="font-weight: bold; color: var(--primary);"></span> ! 👋</div>
+            <div>Score Total : <span id="score-display" class="badge">0 pts</span></div>
+        </div>
+        
+        <h2>Générateur d'Exercices</h2>
+        
+        <div class="grid-2 form-group">
+            <div>
+                <label for="subject-select">Matière :</label>
                 <select id="subject-select">
                     <option value="Histoire">Histoire</option>
                     <option value="Géographie">Géographie</option>
-                    <option value="EMC">Enseignement Moral et Civique (EMC)</option>
-                    <option value="Sciences">Sciences (Physique/SVT/Techno)</option>
+                    <option value="EMC">EMC</option>
+                    <option value="Sciences">Sciences (SVT / Physique / Techno)</option>
                 </select>
             </div>
-
-            <div class="form-group">
-                <label for="format-select">Format des questions :</label>
+            <div>
+                <label for="format-select">Format :</label>
                 <select id="format-select">
-                    <option value="courte">Questions courtes (Flashcards / Quiz rapide)</option>
-                    <option value="longue">Questions détaillées (Développement rédigé)</option>
+                    <option value="courte">Question courte (Flashcard)</option>
+                    <option value="longue">Développement construit / Réflexion</option>
                 </select>
             </div>
-
-            <button id="start-btn">Générer une question</button>
         </div>
 
-        <div id="quiz-box" class="quiz-box hidden">
-            <div class="question-container">
-                <h3>Question :</h3>
-                <p id="question-text">Chargement de la question...</p>
-            </div>
+        <button id="btn-generate">Générer une question par IA</button>
 
+        <div id="question-box" class="hidden" style="margin-top: 25px;">
+            <h3 style="margin-bottom:5px;">Question posée :</h3>
+            <div id="question-text" style="font-style: italic; margin-bottom: 15px; font-size: 17px;"></div>
+            
             <div class="form-group">
                 <label for="user-answer">Ta réponse :</label>
-                <textarea id="user-answer" placeholder="Rédige ta réponse ici..."></textarea>
+                <textarea id="user-answer" placeholder="Rédige ta réponse ici de la manière la plus complète possible..."></textarea>
             </div>
+            <button id="btn-correct" style="background-color: #10b981;">Envoyer ma réponse pour correction</button>
+        </div>
 
-            <button id="submit-btn">Corriger ma réponse</button>
-
-            <div id="correction-box" class="correction-box hidden">
-                <h3>📜 Correction de l'IA :</h3>
-                <div id="correction-text"></div>
-                <button id="next-btn">Question suivante</button>
-            </div>
+        <div id="correction-box" class="hidden response-area">
+            <h3 style="margin-top:0; color:#10b981;">Correction de l'IA :</h3>
+            <div id="correction-text"></div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <div id="leaderboard-screen" class="card hidden">
+        <h2>🏆 Top 10 - Classement Général</h2>
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rang</th>
+                    <th>Pseudo</th>
+                    <th>Histoire</th>
+                    <th>Géo</th>
+                    <th>EMC</th>
+                    <th>Sciences</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+                </tbody>
+        </table>
+        <button id="btn-refresh-lead" style="margin-top:15px; background-color:#6b7280;">Actualiser le classement</button>
+    </div>
+</div>
+
+<script>
+    let currentUser = null;
+    let currentQuestion = "";
+
+    // Bouton de connexion / Inscription
+    document.getElementById('btn-auth').addEventListener('click', async () => {
+        const pseudo = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const errorEl = document.getElementById('auth-error');
+
+        if(!pseudo || !password) {
+            errorEl.innerText = "Veuillez remplir tous les champs.";
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'login_register', pseudo, password })
+            });
+            const data = await res.json();
+
+            if(data.error) {
+                errorEl.innerText = data.error;
+            } else {
+                currentUser = data.user;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-screen').classList.remove('hidden');
+                document.getElementById('leaderboard-screen').classList.remove('hidden');
+                
+                document.getElementById('user-display').innerText = currentUser.pseudo;
+                document.getElementById('score-display').innerText = `${currentUser.score_total} pts`;
+                
+                loadLeaderboard();
+            }
+        } catch(err) {
+            errorEl.innerText = "Erreur de connexion au serveur d'authentification.";
+        }
+    });
+
+    // Générer une question via Groq
+    document.getElementById('btn-generate').addEventListener('click', async () => {
+        const subject = document.getElementById('subject-select').value;
+        const format = document.getElementById('format-select').value;
+        const btn = document.getElementById('btn-generate');
+        
+        btn.innerText = "Génération en cours...";
+        btn.disabled = true;
+        document.getElementById('correction-box').classList.add('hidden');
+
+        try {
+            const res = await fetch('/api/grok.js', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'generate', subject, format })
+            });
+            const data = await res.json();
+            
+            if(data.question) {
+                currentQuestion = data.question;
+                document.getElementById('question-text').innerText = data.question;
+                document.getElementById('question-box').classList.remove('hidden');
+                document.getElementById('user-answer').value = "";
+            } else {
+                alert("Erreur lors de la génération : " + (data.error || "Inconnue"));
+            }
+        } catch(err) {
+            alert("Impossible de joindre l'IA.");
+        } finally {
+            btn.innerText = "Génération d'une question par IA";
+            btn.disabled = false;
+        }
+    });
+
+    // Corriger la réponse et sauvegarder le score
+    document.getElementById('btn-correct').addEventListener('click', async () => {
+        const subject = document.getElementById('subject-select').value;
+        const format = document.getElementById('format-select').value;
+        const userAnswer = document.getElementById('user-answer').value.trim();
+        const btn = document.getElementById('btn-correct');
+
+        if(!userAnswer) {
+            alert("Écris d'abord ta réponse !");
+            return;
+        }
+
+        btn.innerText = "Correction en cours...";
+        btn.disabled = true;
+
+        try {
+            // 1. Demander la correction à l'IA
+            const res = await fetch('/api/grok.js', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'correct', subject, format, question: currentQuestion, userAnswer })
+            });
+            const data = await res.json();
+
+            if(data.correction) {
+                document.getElementById('correction-text').innerText = data.correction;
+                document.getElementById('correction-box').classList.remove('hidden');
+
+                // Extraire une note sur 5 de la correction si possible (ex: "Note: 4/5" ou "4/5") pour l'ajouter à la base de données
+                let pointsAttribues = 2; // Par défaut s'il a répondu quelque chose
+                const noteMatch = data.correction.match(/(\d)\s*\/\s*5/);
+                if(noteMatch) {
+                    pointsAttribues = parseInt(noteMatch[1]);
+                }
+
+                // 2. Sauvegarder le score dans Supabase via notre API auth
+                const saveRes = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'save_score', 
+                        pseudo: currentUser.pseudo, 
+                        subject, 
+                        score: pointsAttribues 
+                    })
+                });
+                const saveData = await saveRes.json();
+                
+                if(saveData.user) {
+                    currentUser = saveData.user;
+                    document.getElementById('score-display').innerText = `${currentUser.score_total} pts`;
+                    loadLeaderboard(); // Actualise le classement en direct
+                }
+            }
+        } catch(err) {
+            alert("Erreur lors de la correction.");
+        } finally {
+            btn.innerText = "Envoyer ma réponse pour correction";
+            btn.disabled = false;
+        }
+    });
+
+    // Charger le classement général
+    async function loadLeaderboard() {
+        try {
+            const res = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'get_leaderboard' })
+            });
+            const data = await res.json();
+            
+            if(data.leaderboard) {
+                const tbody = document.getElementById('leaderboard-body');
+                tbody.innerHTML = "";
+                
+                data.leaderboard.forEach((row, index) => {
+                    const tr = document.createElement('tr');
+                    // Mettre en gras la ligne du joueur actuellement connecté
+                    if(currentUser && row.pseudo === currentUser.pseudo) {
+                        tr.style.fontWeight = 'bold';
+                        tr.style.backgroundColor = '#fef08a';
+                    }
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${row.pseudo}</td>
+                        <td>${row.score_histoire || 0}</td>
+                        <td>${row.score_geographie || 0}</td>
+                        <td>${row.score_emc || 0}</td>
+                        <td>${row.score_sciences || 0}</td>
+                        <td><span class="badge">${row.score_total || 0} pts</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        } catch(err) {
+            console.error("Erreur chargement classement:", err);
+        }
+    }
+
+    document.getElementById('btn-refresh-lead').addEventListener('click', loadLeaderboard);
+</script>
 </body>
 </html>
