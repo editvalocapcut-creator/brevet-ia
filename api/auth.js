@@ -6,7 +6,6 @@ const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
-    // Configuration des headers CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -23,20 +22,18 @@ export default async function handler(req, res) {
     const score = req.body.score !== undefined ? req.body.score : req.body.Score;
 
     try {
-        // 1. INSCRIPTION / CONNEXION AUTOMATIQUE
         if (action === 'login') {
             if (!pseudo || !password) {
                 return res.status(400).json({ error: "Pseudo et mot de passe requis." });
             }
 
-            // Recherche sans utiliser single() pour éviter les crashs 500
             const { data: users, error: fetchError } = await supabase
                 .from('classement_brevet')
                 .select('*')
                 .eq('pseudo', pseudo);
 
             if (fetchError) {
-                return res.status(500).json({ error: "Erreur Supabase à la recherche", details: fetchError.message });
+                return res.status(500).json({ error: "Erreur de liaison avec la base de données", details: fetchError.message });
             }
 
             const user = users && users.length > 0 ? users[0] : null;
@@ -48,7 +45,6 @@ export default async function handler(req, res) {
                     return res.status(401).json({ error: "Mot de passe incorrect pour ce pseudo." });
                 }
             } else {
-                // Inscription : utilisation d'une syntaxe plus tolérante
                 const { data: insertedData, error: insertError } = await supabase
                     .from('classement_brevet')
                     .insert([{ 
@@ -63,7 +59,7 @@ export default async function handler(req, res) {
                     .select();
 
                 if (insertError) {
-                    return res.status(500).json({ error: "Impossible de créer le profil", details: insertError.message });
+                    return res.status(500).json({ error: "Création de compte impossible", details: insertError.message });
                 }
 
                 const newUser = insertedData && insertedData.length > 0 ? insertedData[0] : { pseudo, score_total: 0 };
@@ -71,7 +67,6 @@ export default async function handler(req, res) {
             }
         }
 
-        // 2. MISE À JOUR DES SCORES
         else if (action === 'updateScore') {
             if (!pseudo || pseudo === 'undefined') {
                 return res.status(200).json({ message: "Score ignoré car l'utilisateur n'est pas connecté." });
@@ -87,7 +82,6 @@ export default async function handler(req, res) {
             }
 
             const user = users[0];
-
             let column = 'score_histoire';
             const cleanSubject = (subject || '').toLowerCase();
             if (cleanSubject.includes('géo')) column = 'score_geographie';
@@ -114,7 +108,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ message: "Score mis à jour !", user: updatedData[0] });
         }
 
-        // 3. RÉCUPÉRATION DU TOP 10
         else if (action === 'getLeaderboard') {
             const { data: leaderboard, error: boardError } = await supabase
                 .from('classement_brevet')
