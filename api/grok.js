@@ -48,11 +48,23 @@ module.exports = async function (req, res) {
         });
     };
 
+    // Traduction explicite des matières pour guider l'IA sans ambiguïté
+    let matiereComplete = subject;
+    if (subject === 'emc') {
+        matiereComplete = "Enseignement Moral et Civique (EMC, citoyenneté et valeurs de la République)";
+    } else if (subject === 'mathematiques') {
+        matiereComplete = "Mathématiques";
+    } else if (subject === 'francais') {
+        matiereComplete = "Français (Langue, Grammaire et Littérature)";
+    } else if (subject === 'sciences') {
+        matiereComplete = "Sciences (SVT, Physique-Chimie, Technologie)";
+    }
+
     try {
         // 1. GÉNÉRATION DE QUESTION
         if (action === 'generate') {
             const prompt = `Tu es un professeur de l'Éducation nationale pour des élèves de Troisième préparant le Brevet des collèges en France.
-Génère une question ou un exercice unique, pertinent et strictement conforme au programme officiel pour la matière suivante : ${subject}.
+Génère une question ou un exercice unique, pertinent et strictement conforme au programme officiel pour la matière suivante : ${matiereComplete}.
 Format demandé : ${format === 'courte' ? 'Une question flash simple et directe (par exemple : calcul ou règle rapide pour les mathématiques, grammaire ou conjugaison pour le français)' : 'Un sujet développé (par exemple : problème écrit structuré pour les mathématiques, analyse de texte ou réflexion courte pour le français)'}.
 Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduction, salutation ni conclusion.`;
 
@@ -76,7 +88,7 @@ Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduct
         // 2. CORRECTION DE LA RÉPONSE
         else if (action === 'correct') {
             const prompt = `Tu es un professeur correcteur officiel du Brevet des collèges. Évalue la réponse de l'élève de manière constructive.
-Matière : ${subject}
+Matière : ${matiereComplete}
 Format de l'exercice : ${format}
 Question d'origine : ${question}
 Réponse proposée par l'élève : ${userAnswer}
