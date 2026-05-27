@@ -5,149 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brevet IA Révision</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f7fb; color: #333; }
-        h1 { color: #2c3e50; text-align: center; }
-        .matieres-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
-        button { padding: 15px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.2s, background 0.2s; font-weight: bold; }
-        button:hover { transform: translateY(-2px); }
-        .btn-histoire { background: #e74c3c; color: white; }
-        .btn-sciences { background: #2ecc71; color: white; }
-        .btn-maths { background: #3498db; color: white; }
-        .btn-francais { background: #9b59b6; color: white; }
-        .btn-action { background: #2c3e50; color: white; width: 100%; margin-top: 10px; }
-        .box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        textarea { width: 100%; height: 100px; border: 1px solid #ddd; border-radius: 6px; padding: 10px; resize: vertical; box-sizing: border-box; }
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #f4f4f9; }
+        .box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        button { background: #0070f3; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 5px; }
+        button:hover { background: #0051a2; }
+        select, textarea { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        textarea { height: 120px; }
         .hidden { display: none; }
-        .note-badge { font-size: 20px; font-weight: bold; color: #e67e22; text-align: center; margin-top: 15px; }
+        
+        /* Ton fameux tableau noir des scores */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #111; color: white; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        th { background: #222; color: #0070f3; }
     </style>
 </head>
 <body>
 
-    <h1>🚀 Préparation au Brevet avec l'IA</h1>
-
     <div class="box">
-        <h3>1. Choisis ta matière de révision :</h3>
-        <div class="matieres-container">
-            <button class="btn-histoire" onclick="selectSubject('histoire')">🌍 Histoire-Géo / EMC</button>
-            <button class="btn-sciences" onclick="selectSubject('sciences')">🧪 Sciences</button>
-            <button class="btn-maths" onclick="selectSubject('maths')">📐 Mathématiques</button>
-            <button class="btn-francais" onclick="selectSubject('francais')">📝 Français</button>
-        </div>
-        
-        <div id="format-selection" class="hidden">
-            <h3>2. Choisis le format de l'exercice :</h3>
-            <select id="exercise-format" style="width: 100%; padding: 10px; border-radius: 6px;">
-                <option value="courte">Question Flash (Rapide)</option>
-                <option value="longue">Sujet Type Brevet (Développé)</option>
+        <h2>Matière :</h2>
+        <button onclick="selectSubject('histoire')">Histoire-Géo</button>
+        <button onclick="selectSubject('sciences')">Sciences</button>
+        <button onclick="selectSubject('maths')">Mathématiques</button>
+        <button onclick="selectSubject('francais')">Français</button>
+
+        <div id="format-section" class="hidden">
+            <h2>Format :</h2>
+            <select id="format">
+                <option value="courte">Question courte</option>
+                <option value="longue">Question longue</option>
             </select>
-            <button class="btn-action" onclick="generateQuestion()">✨ Générer l'exercice</button>
+            <br><br>
+            <button onclick="generateQuestion()">Générer</button>
         </div>
     </div>
 
-    <div id="exercise-box" class="box hidden">
-        <h3>📋 Énoncé de l'exercice :</h3>
-        <p id="question-text" style="font-size: 16px; line-height: 1.5; background: #f9f9f9; padding: 15px; border-left: 5px solid #2c3e50;"></p>
-        
-        <h3>✍️ Ta réponse :</h3>
-        <textarea id="user-answer" placeholder="Rédige ta réponse ici de la manière la plus complète possible..."></textarea>
-        <button class="btn-action" onclick="submitAnswer()">✔️ Envoyer pour correction</button>
+    <div id="question-section" class="box hidden">
+        <h2>Question :</h2>
+        <p id="question-text"></p>
+        <textarea id="answer" placeholder="Ta réponse..."></textarea>
+        <br><br>
+        <button onclick="submitAnswer()">Corriger</button>
     </div>
 
-    <div id="correction-box" class="box hidden">
-        <h3>🧐 Correction du Professeur IA :</h3>
-        <p id="correction-text" style="white-space: pre-wrap; line-height: 1.6;"></p>
+    <div id="correction-section" class="box hidden">
+        <h2>Correction :</h2>
+        <p id="correction-text" style="white-space: pre-wrap;"></p>
     </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Matière</th>
+                <th>Dernière Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Histoire-Géo</td><td id="score-histoire">-</td></tr>
+            <tr><td>Sciences</td><td id="score-sciences">-</td></tr>
+            <tr><td>Mathématiques</td><td id="score-maths">-</td></tr>
+            <tr><td>Français</td><td id="score-francais">-</td></tr>
+        </tbody>
+    </table>
 
     <script>
         let currentSubject = '';
 
         function selectSubject(subject) {
             currentSubject = subject;
-            document.getElementById('format-selection').classList.remove('hidden');
-            document.getElementById('exercise-box').classList.add('hidden');
-            document.getElementById('correction-box').classList.add('hidden');
-            
-            // Effets visuels de sélection active si nécessaire
-            console.log("Matière sélectionnée : " + subject);
+            document.getElementById('format-section').classList.remove('hidden');
         }
 
         async function generateQuestion() {
-            const format = document.getElementById('exercise-format').value;
-            document.getElementById('exercise-box').classList.remove('hidden');
-            document.getElementById('question-text').innerText = "Génération de l'exercice en cours par l'IA...";
-            document.getElementById('user-answer').value = '';
-            document.getElementById('correction-box').classList.add('hidden');
+            const format = document.getElementById('format').value;
+            document.getElementById('question-section').classList.remove('hidden');
+            document.getElementById('question-text').innerText = "Chargement...";
 
-            try {
-                const response = await fetch('/api/grok', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'generate', subject: currentSubject, format: format })
-                });
-                const data = await response.json();
-                if (data.error) {
-                    document.getElementById('question-text').innerText = "Erreur : " + data.error;
-                } else {
-                    document.getElementById('question-text').innerText = data.question;
-                }
-            } catch (err) {
-                document.getElementById('question-text').innerText = "Erreur de connexion au serveur.";
-            }
+            const res = await fetch('/api/grok', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'generate', subject: currentSubject, format: format })
+            });
+            const data = await res.json();
+            document.getElementById('question-text').innerText = data.question || data.error;
         }
 
         async function submitAnswer() {
-            const answer = document.getElementById('user-answer').value;
+            const answer = document.getElementById('answer').value;
             const question = document.getElementById('question-text').innerText;
-            const format = document.getElementById('exercise-format').value;
+            const format = document.getElementById('format').value;
 
-            if(!answer.trim()) {
-                alert("N'oublie pas de rédiger une réponse avant d'envoyer !");
-                return;
-            }
+            document.getElementById('correction-section').classList.remove('hidden');
+            document.getElementById('correction-text').innerText = "Correction en cours...";
 
-            document.getElementById('correction-box').classList.remove('hidden');
-            document.getElementById('correction-text').innerText = "Le professeur corrige ta copie, patiente un instant...";
+            const res = await fetch('/api/grok', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'correct', subject: currentSubject, format: format, question: question, userAnswer: answer })
+            });
+            const data = await res.json();
+            document.getElementById('correction-text').innerText = data.correction || data.error;
 
-            try {
-                const response = await fetch('/api/grok', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'correct', 
-                        subject: currentSubject, 
-                        format: format, 
-                        question: question, 
-                        userAnswer: answer 
-                    })
-                });
-                const data = await response.json();
-                if (data.error) {
-                    document.getElementById('correction-text').innerText = "Erreur pendant la correction : " + data.error;
-                } else {
-                    document.getElementById('correction-text').innerText = data.correction;
-                    
-                    // Optionnel : Extraction de la note pour envoi à Supabase
-                    const noteMatch = data.correction.match(/Note\s*:\s*(\d+)\/5/i);
-                    if (noteMatch && noteMatch[1]) {
-                        saveNoteToSupabase(currentSubject, parseInt(noteMatch[1]));
-                    }
+            // Récupère la note et l'affiche directement dans ton tableau noir
+            if (data.correction) {
+                const match = data.correction.match(/Note\s*:\s*(\d+)\/5/i);
+                if (match) {
+                    const note = match[1] + "/5";
+                    document.getElementById('score-' + currentSubject).innerText = note;
+                    saveToDatabase(currentSubject, match[1]);
                 }
-            } catch (err) {
-                document.getElementById('correction-text').innerText = "Impossible de joindre le service de correction.";
             }
         }
 
-        async function saveNoteToSupabase(subject, note) {
-            try {
-                await fetch('/api/auth', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subject: subject, note: note })
-                });
-                console.log(`Note de ${note}/5 enregistrée en ${subject} !`);
-            } catch (e) {
-                console.error("Échec de la sauvegarde de la note dans Supabase");
-            }
+        async function saveToDatabase(subject, note) {
+            await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject: subject, note: parseInt(note) })
+            });
         }
     </script>
 </body>
