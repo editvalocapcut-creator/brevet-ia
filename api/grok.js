@@ -1,370 +1,107 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entraînement Brevet IA</title>
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --background: #f3f4f6;
-            --card-bg: #ffffff;
-            --text: #1f2937;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--background);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-        .container {
-            width: 100%;
-            max-width: 800px;
-        }
-        .card {
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-        h1, h2 { text-align: center; color: var(--primary); margin-top: 0; }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label { display: block; margin-bottom: 5px; font-weight: 600; }
-        input[type="text"], input[type="password"], textarea, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-        textarea { resize: vertical; height: 100px; }
-        button {
-            width: 100%;
-            background-color: var(--primary);
-            color: white;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button:hover { background-color: var(--primary-hover); }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .hidden { display: none !important; }
-        .leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        .leaderboard-table th, .leaderboard-table td {
-            border: 1px solid #e5e7eb;
-            padding: 10px;
-            text-align: left;
-        }
-        .leaderboard-table th { background-color: #f9fafb; }
-        .badge {
-            background: #e0e7ff;
-            color: var(--primary);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .response-area {
-            background: #f9fafb;
-            border-left: 4px solid var(--primary);
-            padding: 15px;
-            margin-top: 15px;
-            white-space: pre-line;
-        }
-    </style>
-</head>
-<body>
+const https = require('https');
 
-<div class="container">
-    <div id="auth-screen" class="card">
-        <h1>Connexion / Inscription</h1>
-        <p style="text-align:center; color:#6b7280;">Entre un pseudo et un mot de passe. Si le compte n'existe pas, il sera créé automatiquement !</p>
-        <div class="form-group">
-            <label for="username">Pseudo :</label>
-            <input type="text" id="username" placeholder="Ex: Val77">
-        </div>
-        <div class="form-group">
-            <label for="password">Mot de passe :</label>
-            <input type="password" id="password" placeholder="••••••••">
-        </div>
-        <button id="btn-auth">Se connecter / S'inscrire</button>
-        <p id="auth-error" style="color:red; text-align:center; font-weight:bold; margin-top: 15px;"></p>
-    </div>
+module.exports = async function (req, res) {
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-    <div id="main-screen" class="card hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div>Bonjour, <span id="user-display" style="font-weight: bold; color: var(--primary);"></span> ! 👋</div>
-            <div>Score Total : <span id="score-display" class="badge">0 pts</span></div>
-        </div>
-        
-        <h2>Générateur d'Exercices</h2>
-        
-        <div class="grid-2 form-group">
-            <div>
-                <label for="subject-select">Matière :</label>
-                <select id="subject-select">
-                    <option value="Histoire">Histoire</option>
-                    <option value="Géographie">Géographie</option>
-                    <option value="EMC">EMC</option>
-                    <option value="Sciences">Sciences (SVT / Physique / Techno)</option>
-                    <option value="Mathématiques">Mathématiques</option>
-                    <option value="Français">Français</option>
-                </select>
-            </div>
-            <div>
-                <label for="format-select">Format :</label>
-                <select id="format-select">
-                    <option value="courte">Question courte (Flashcard)</option>
-                    <option value="longue">Développement construit / Réflexion</option>
-                </select>
-            </div>
-        </div>
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
-        <button id="btn-generate">Générer une question par IA</button>
+    const { action, subject, format, question, userAnswer } = req.body;
+    const apiKey = process.env.GROK_API_KEY;
 
-        <div id="question-box" class="hidden" style="margin-top: 25px;">
-            <h3 style="margin-bottom:5px;">Question posée :</h3>
-            <div id="question-text" style="font-style: italic; margin-bottom: 15px; font-size: 17px;"></div>
-            
-            <div class="form-group">
-                <label for="user-answer">Ta réponse :</label>
-                <textarea id="user-answer" placeholder="Rédige ta réponse ici de la manière la plus complète possible..."></textarea>
-            </div>
-            <button id="btn-correct" style="background-color: #10b981;">Envoyer ma réponse pour correction</button>
-        </div>
-
-        <div id="correction-box" class="hidden response-area">
-            <h3 style="margin-top:0; color:#10b981;">Correction de l'IA :</h3>
-            <div id="correction-text"></div>
-        </div>
-    </div>
-
-    <div id="leaderboard-screen" class="card hidden">
-        <h2>🏆 Top 10 - Classement Général</h2>
-        <table class="leaderboard-table">
-            <thead>
-                <tr>
-                    <th>Rang</th>
-                    <th>Pseudo</th>
-                    <th>Histoire</th>
-                    <th>Géo</th>
-                    <th>EMC</th>
-                    <th>Sciences</th>
-                    <th>Maths</th>
-                    <th>Français</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody id="leaderboard-body">
-            </tbody>
-        </table>
-        <button id="btn-refresh-lead" style="margin-top:15px; background-color:#6b7280;">Actualiser le classement</button>
-    </div>
-</div>
-
-<script>
-    let currentUser = null;
-    let currentQuestion = "";
-
-    async function handleLogin() {
-        const pseudo = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value;
-        const errorEl = document.getElementById('auth-error');
-        const btn = document.getElementById('btn-auth');
-
-        if(!pseudo || !password) {
-            errorEl.innerText = "Veuillez remplir tous les champs.";
-            return;
-        }
-
-        errorEl.innerText = "";
-        btn.innerText = "Connexion en cours...";
-        btn.disabled = true;
-
-        try {
-            const res = await fetch('/api/auth.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'login', pseudo, password })
-            });
-            const data = await res.json();
-
-            if(data.error) {
-                errorEl.innerText = data.error;
-                btn.innerText = "Se connecter / S'inscrire";
-                btn.disabled = false;
-            } else {
-                currentUser = data.user;
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('main-screen').classList.remove('hidden');
-                document.getElementById('leaderboard-screen').classList.remove('hidden');
-                
-                document.getElementById('user-display').innerText = currentUser.pseudo;
-                document.getElementById('score-display').innerText = `${currentUser.score_total || 0} pts`;
-                
-                loadLeaderboard();
-            }
-        } catch(err) {
-            errorEl.innerText = "Erreur de connexion au serveur d'authentification.";
-            btn.innerText = "Se connecter / S'inscrire";
-            btn.disabled = false;
-        }
+    if (!apiKey) {
+        return res.status(500).json({ error: "La clé GROK_API_KEY est introuvable dans les variables Vercel." });
     }
 
-    document.getElementById('btn-auth').addEventListener('click', handleLogin);
+    // Modèle Llama 3.1 ultra rapide et actif sur Groq
+    const MODEL_NAME = "llama-3.1-8b-instant";
 
-    document.getElementById('password').addEventListener('keyup', (event) => {
-        if (event.key === "Enter") handleLogin();
-    });
-    
-    document.getElementById('username').addEventListener('keyup', (event) => {
-        if (event.key === "Enter") handleLogin();
-    });
-
-    document.getElementById('btn-generate').addEventListener('click', async () => {
-        const subject = document.getElementById('subject-select').value;
-        const format = document.getElementById('format-select').value;
-        const btn = document.getElementById('btn-generate');
-        
-        btn.innerText = "Génération en cours...";
-        btn.disabled = true;
-        document.getElementById('correction-box').classList.add('hidden');
-
-        try {
-            const res = await fetch('/api/grok.js', {
+    const postToGroq = (bodyData) => {
+        return new Promise((resolve, reject) => {
+            const options = {
+                hostname: 'api.groq.com',
+                path: '/openai/v1/chat/completions',
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'generate', subject, format })
-            });
-            const data = await res.json();
-            
-            if(data.question) {
-                currentQuestion = data.question;
-                document.getElementById('question-text').innerText = data.question;
-                document.getElementById('question-box').classList.remove('hidden');
-                document.getElementById('user-answer').value = "";
-            } else {
-                alert("Erreur lors de la génération : " + (data.error || "Inconnue"));
-            }
-        } catch(err) {
-            alert("Impossible de joindre l'IA.");
-        } finally {
-            btn.innerText = "Génération d'une question par IA";
-            btn.disabled = false;
-        }
-    });
-
-    document.getElementById('btn-correct').addEventListener('click', async () => {
-        const subject = document.getElementById('subject-select').value;
-        const format = document.getElementById('format-select').value;
-        const userAnswer = document.getElementById('user-answer').value.trim();
-        const btn = document.getElementById('btn-correct');
-
-        if(!userAnswer) {
-            alert("Écris d'abord ta réponse !");
-            return;
-        }
-
-        btn.innerText = "Correction en cours...";
-        btn.disabled = true;
-
-        try {
-            const res = await fetch('/api/grok.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'correct', subject, format, question: currentQuestion, userAnswer })
-            });
-            const data = await res.json();
-
-            if(data.correction) {
-                document.getElementById('correction-text').innerText = data.correction;
-                document.getElementById('correction-box').classList.remove('hidden');
-
-                let pointsAttribues = 2; 
-                const noteMatch = data.correction.match(/(\d)\s*\/\s*5/);
-                if(noteMatch) {
-                    pointsAttribues = parseInt(noteMatch[1]);
+                headers: {
+                    'Authorization': `Bearer ${apiKey.trim()}`,
+                    'Content-Type': 'application/json'
                 }
+            };
 
-                const saveRes = await fetch('/api/auth.js', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'updateScore', 
-                        pseudo: currentUser.pseudo, 
-                        subject, 
-                        score: pointsAttribues 
-                    })
+            const request = https.request(options, (response) => {
+                let data = '';
+                response.on('data', (chunk) => { data += chunk; });
+                response.on('end', () => {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch (e) {
+                        reject(new Error("Réponse de l'API Groq illisible (JSON invalide)"));
+                    }
                 });
-                const saveData = await saveRes.json();
-                
-                if(saveData.user) {
-                    currentUser = saveData.user;
-                    document.getElementById('score-display').innerText = `${currentUser.score_total || 0} pts`;
-                    loadLeaderboard(); 
-                }
+            });
+
+            request.on('error', (err) => reject(err));
+            request.write(JSON.stringify(bodyData));
+            request.end();
+        });
+    };
+
+    try {
+        // 1. GÉNÉRATION DE QUESTION
+        if (action === 'generate') {
+            const prompt = `Tu es un professeur de l'Éducation nationale pour des élèves de Troisième préparant le Brevet des collèges en France.
+Génère une question ou un exercice unique, pertinent et strictement conforme au programme officiel pour la matière suivante : ${subject}.
+Format demandé : ${format === 'courte' ? 'Une question flash simple et directe (par exemple : calcul ou règle rapide pour les mathématiques, grammaire ou conjugaison pour le français)' : 'Un sujet développé (par exemple : problème écrit structuré pour les mathématiques, analyse de texte ou réflexion courte pour le français)'}.
+Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduction, salutation ni conclusion.`;
+
+            const data = await postToGroq({
+                model: MODEL_NAME,
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7
+            });
+            
+            if (data.error) {
+                return res.status(400).json({ error: `Erreur Groq: ${data.error.message} (Code: ${data.error.code})` });
             }
-        } catch(err) {
-            alert("Erreur lors de la correction.");
-        } finally {
-            btn.innerText = "Envoyer ma réponse pour correction";
-            btn.disabled = false;
-        }
-    });
 
-    async function loadLeaderboard() {
-        try {
-            const res = await fetch('/api/auth.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'getLeaderboard' })
-            });
-            const data = await res.json();
-            const leaderboardData = Array.isArray(data) ? data : (data.leaderboard || []);
-            
-            const tbody = document.getElementById('leaderboard-body');
-            tbody.innerHTML = "";
-            
-            leaderboardData.forEach((row, index) => {
-                const tr = document.createElement('tr');
-                if(currentUser && row.pseudo === currentUser.pseudo) {
-                    tr.style.fontWeight = 'bold';
-                    tr.style.backgroundColor = '#fef08a';
-                }
-                tr.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${row.pseudo}</td>
-                    <td>${row.score_histoire || 0}</td>
-                    <td>${row.score_geographie || 0}</td>
-                    <td>${row.score_emc || 0}</td>
-                    <td>${row.score_sciences || 0}</td>
-                    <td>${row.score_mathematiques || 0}</td>
-                    <td>${row.score_francais || 0}</td>
-                    <td><span class="badge">${row.score_total || 0} pts</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        } catch(err) {
-            console.error("Erreur chargement classement:", err);
+            if (data.choices && data.choices[0]) {
+                return res.status(200).json({ question: data.choices[0].message.content.trim() });
+            } else {
+                return res.status(500).json({ error: "Le serveur a renvoyé un format de réponse inconnu." });
+            }
         }
+
+        // 2. CORRECTION DE LA RÉPONSE
+        else if (action === 'correct') {
+            const prompt = `Tu es un professeur correcteur officiel du Brevet des collèges. Évalue la réponse de l'élève de manière constructive.
+Matière : ${subject}
+Format de l'exercice : ${format}
+Question d'origine : ${question}
+Réponse proposée par l'élève : ${userAnswer}
+
+Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété). Pour le français, prends en compte la rédaction et l'orthographe. Pour les mathématiques, valide la justesse du raisonnement logique.
+À la toute fin de ton message, tu dois obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
+
+            const data = await postToGroq({
+                model: MODEL_NAME,
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.4
+            });
+
+            if (data.error) {
+                return res.status(400).json({ error: `Erreur Groq: ${data.error.message}` });
+            }
+
+            if (data.choices && data.choices[0]) {
+                return res.status(200).json({ correction: data.choices[0].message.content.trim() });
+            } else {
+                return res.status(500).json({ error: "Impossible de lire la correction renvoyée par l'IA." });
+            }
+        }
+
+    } catch (err) {
+        return res.status(500).json({ error: `Erreur de traitement : ${err.message}` });
     }
-
-    document.getElementById('btn-refresh-lead').addEventListener('click', loadLeaderboard);
-</script>
-</body>
-</html>
+};
