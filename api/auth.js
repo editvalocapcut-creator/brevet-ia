@@ -1,5 +1,4 @@
 module.exports = async function (req, res) {
-    // Gestion des accès CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -12,12 +11,12 @@ module.exports = async function (req, res) {
     const supabaseKey = process.env.SUPABASE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-        return res.status(500).json({ error: "Variables Supabase manquantes dans Vercel." });
+        return res.status(500).json({ error: "Variables de configuration manquantes sur Vercel." });
     }
 
-    // Fonction pour communiquer avec Supabase
     async function querySupabase(endpoint, options = {}) {
-        return await fetch(`${supabaseUrl}/rest/v1/${endpoint}`, {
+        const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/${endpoint}`;
+        return await fetch(url, {
             headers: {
                 'apikey': supabaseKey,
                 'Authorization': `Bearer ${supabaseKey}`,
@@ -29,21 +28,19 @@ module.exports = async function (req, res) {
     }
 
     try {
-        // 1. CONNEXION OU INSCRIPTION SÉCURISÉE
         if (action === 'login_register') {
             const checkRes = await querySupabase(`classement_brevet?pseudo=eq.${encodeURIComponent(pseudo)}`);
             const users = await checkRes.json();
 
-            if (users.length > 0) {
-                // Le pseudo existe déjà ! On vérifie si le mot de passe est bon
-                if (users[0].password === password) {
+            // Si l'utilisateur existe déjà
+            if (Array.isArray(users) && users.length > 0) {
+                if (String(users[0].password) === String(password)) {
                     return res.status(200).json({ message: "Connexion réussie", user: users[0] });
                 } else {
-                    // C'est ici qu'on bloque l'utilisateur si le mdp est faux
                     return res.status(400).json({ error: "Ce pseudo est déjà pris. Veuillez entrer le bon mot de passe." });
                 }
             } else {
-                // Le pseudo n'existe pas, on crée le compte proprement
+                // Création d'un nouveau compte si le pseudo est libre
                 const createRes = await querySupabase('classement_brevet', {
                     method: 'POST',
                     body: JSON.stringify({ 
@@ -57,15 +54,15 @@ module.exports = async function (req, res) {
                     })
                 });
                 const newUser = await createRes.json();
-                return res.status(200).json({ message: "Compte créé !", user: newUser[0] });
+                const createdUser = Array.isArray(newUser) ? newUser[0] : newUser;
+                return res.status(200).json({ message: "Compte créé !", user: createdUser || { pseudo, score_total: 0 } });
             }
         }
 
-        // 2. ENREGISTRER LES POINTS APRÈS UNE CORRECTION
         else if (action === 'save_score') {
             const getRes = await querySupabase(`classement_brevet?pseudo=eq.${encodeURIComponent(pseudo)}`);
             const users = await getRes.json();
-            if (users.length === 0) return res.status(404).json({ error: "Utilisateur introuvable" });
+            if (!Array.isArray(users) || users.length === 0) return res.status(404).json({ error: "Utilisateur introuvable" });
 
             const user = users[0];
             const columnMap = { 
@@ -75,11 +72,10 @@ module.exports = async function (req, res) {
                 "Sciences": "score_sciences" 
             };
             const column = columnMap[subject];
+            if (!column) return res.status(400).json({ error: "Matière non valide." });
 
-            if (!column) return res.status(400).json({ error: "Matière inconnue" });
-
-            const newMatiereScore = (user[column] || 0) + score;
-            const newTotalScore = (user.score_total || 0) + score;
+            const newMatiereScore = (parseInt(user[column]) || 0) + parseInt(score);
+            const newTotalScore = (parseInt(user.score_total) || 0) + parseInt(score);
 
             const updateRes = await querySupabase(`classement_brevet?pseudo=eq.${encodeURIComponent(pseudo)}`, {
                 method: 'PATCH',
@@ -89,17 +85,16 @@ module.exports = async function (req, res) {
                 })
             });
             const updatedUser = await updateRes.json();
-            return res.status(200).json({ message: "Score mis à jour", user: updatedUser[0] });
+            return res.status(200).json({ message: "Score mis à jour", user: Array.isArray(updatedUser) ? updatedUser[0] : updatedUser });
         }
 
-        // 3. CHARGER LE TOP 10 POUR LE CLASSEMENT
         else if (action === 'get_leaderboard') {
-            const leadRes = await querySupabase('classement_brevet?order=score_total.desc&limit=10');
+            const leadRes = await querySupabase('classement_brevet?select=*&order=score_total.desc&limit=10');
             const leaderboard = await leadRes.json();
-            return res.status(200).json({ leaderboard });
+            return res.status(200).json({ leaderboard: Array.isArray(leaderboard) ? leaderboard : [] });
         }
 
     } catch (err) {
-        return res.status(500).json({ error: "Erreur serveur lors de la requête de base de données." });
+        return res.status(500).json({ error: "Erreur lors de la communication avec la base de données." });
     }
 };
