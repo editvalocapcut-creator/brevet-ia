@@ -1,13 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Alignement exact avec les noms de tes variables Vercel visibles sur ta capture d'écran
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY; 
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
-    // Gestion des headers CORS pour éviter les blocages du navigateur
+    // Configuration des en-têtes CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -17,35 +16,38 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    const { action, pseudo, password, subject, score } = req.body;
+    // Récupération des données (on accepte les variables en MAJUSCULES ou minuscules pour éviter les conflits avec ton HTML)
+    const action = req.body.action;
+    const pseudo = req.body.pseudo || req.body.Pseudo;
+    const password = req.body.password || req.body.Password;
+    const subject = req.body.subject || req.body.Subject;
+    const score = req.body.score !== undefined ? req.body.score : req.body.Score;
 
     try {
-        // 1. INSCRIPTION / CONNEXION AUTOMATIQUE
+        // 1. ACTION : CONNEXION OU INSCRIPTION
         if (action === 'login') {
             if (!pseudo || !password) {
                 return res.status(400).json({ error: "Pseudo et mot de passe requis." });
             }
 
-            // On cherche si l'utilisateur existe déjà
             const { data: user, error: fetchError } = await supabase
                 .from('classement_brevet')
                 .select('*')
                 .eq('pseudo', pseudo)
-                .single();
+                .maybeSingle(); // Plus propre que single() pour éviter de lever une erreur si l'utilisateur n'existe pas
 
-            if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 signifie "non trouvé", ce qui est normal pour une inscription
-                return res.status(500).json({ error: "Erreur lors de la recherche de l'utilisateur." });
+            if (fetchError) {
+                return res.status(500).json({ error: "Erreur de communication avec la base de données." });
             }
 
             if (user) {
-                // Si l'utilisateur existe, on vérifie le mot de passe simple
                 if (user.password === password) {
                     return res.status(200).json({ message: "Connexion réussie", user });
                 } else {
-                    return res.status(401).json({ error: "Mot de passe incorrect pour ce pseudo." });
+                    return res.status(401).json({ error: "Mot de passe incorrect." });
                 }
             } else {
-                // Si l'utilisateur n'existe pas, on le crée automatiquement
+                // Inscription automatique si le pseudo est libre
                 const { data: newUser, error: insertError } = await supabase
                     .from('classement_brevet')
                     .insert([{ 
@@ -61,38 +63,40 @@ export default async function handler(req, res) {
                     .single();
 
                 if (insertError) {
-                    return res.status(500).json({ error: "Impossible de créer le profil. Vérifie que la table classement_brevet ou ses colonnes sont bien configurées." });
+                    return res.status(500).json({ error: "Impossible de créer le joueur dans la base de données." });
                 }
 
                 return res.status(200).json({ message: "Inscription réussie", user: newUser });
             }
         }
 
-        // 2. MISE À JOUR DES SCORES APRÈS UNE CORRECTION
+        // 2. ACTION : ENREGISTRER UN SCORE
         else if (action === 'updateScore') {
-            if (!pseudo || !subject || score === undefined) {
-                return res.status(400).json({ error: "Données manquantes pour la mise à jour." });
+            // Sécurité : si le site envoie "undefined" à cause d'un bug de session, on ne bloque pas l'application
+            if (!pseudo || pseudo === 'undefined') {
+                return res.status(200).json({ message: "Score ignoré car l'utilisateur n'est pas connecté." });
             }
 
-            // Récupérer le score actuel
             const { data: user, error: getError } = await supabase
                 .from('classement_brevet')
                 .select('*')
                 .eq('pseudo', pseudo)
-                .single();
+                .maybeSingle();
 
             if (getError || !user) {
-                return res.status(404).json({ error: "Utilisateur introuvable." });
+                return res.status(404).json({ error: "Utilisateur introuvable pour la mise à jour." });
             }
 
-            // Déterminer quelle colonne modifier selon la matière reçue
+            // Détection automatique de la bonne colonne de score
             let column = 'score_histoire';
-            if (subject.toLowerCase().includes('géo')) column = 'score_geographie';
-            if (subject.toLowerCase().includes('emc')) column = 'score_emc';
-            if (subject.toLowerCase().includes('science')) column = 'score_sciences';
+            const cleanSubject = (subject || '').toLowerCase();
+            if (cleanSubject.includes('géo')) column = 'score_geographie';
+            if (cleanSubject.includes('emc')) column = 'score_emc';
+            if (cleanSubject.includes('science')) column = 'score_sciences';
 
-            const newSubjectScore = (user[column] || 0) + score;
-            const newTotalScore = (user.score_total || 0) + score;
+            const pointsToAdd = parseInt(score, 10) || 0;
+            const newSubjectScore = (user[column] || 0) + pointsToAdd;
+            const newTotalScore = (user.score_total || 0) + pointsToAdd;
 
             const { data: updatedUser, error: updateError } = await supabase
                 .from('classement_brevet')
@@ -105,13 +109,13 @@ export default async function handler(req, res) {
                 .single();
 
             if (updateError) {
-                return res.status(500).json({ error: "Échec de l'enregistrement du score." });
+                return res.status(500).json({ error: "Échec de l'enregistrement du score dans Supabase." });
             }
 
             return res.status(200).json({ message: "Score mis à jour !", user: updatedUser });
         }
 
-        // 3. RÉCUPÉRATION DU TOP 10 POUR LE TABLEAU
+        // 3. ACTION : CHARGER LE TOP 10
         else if (action === 'getLeaderboard') {
             const { data: leaderboard, error: boardError } = await supabase
                 .from('classement_brevet')
@@ -120,15 +124,15 @@ export default async function handler(req, res) {
                 .limit(10);
 
             if (boardError) {
-                return res.status(500).json({ error: "Impossible de charger le classement." });
+                return res.status(500).json({ error: "Impossible de récupérer le classement général." });
             }
 
             return res.status(200).json(leaderboard);
         }
 
-        return res.status(400).json({ error: "Action demandée inconnue." });
+        return res.status(400).json({ error: "Action non reconnue." });
 
     } catch (err) {
-        return res.status(500).json({ error: `Erreur serveur : ${err.message}` });
+        return res.status(500).json({ error: `Erreur interne : ${err.message}` });
     }
 }
