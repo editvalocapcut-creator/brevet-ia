@@ -52,10 +52,19 @@ module.exports = async function (req, res) {
     try {
         // 1. GÉNÉRATION DE QUESTION
         if (action === 'generate') {
-            const prompt = `Tu es un professeur d'histoire-géographie et de sciences pour des élèves de Troisième préparant le Brevet en France.
-Génère une question unique, pertinente et conforme au programme officiel pour la matière suivante : ${subject}.
-Format demandé : ${format === 'courte' ? 'Une question flash simple et directe' : 'Un sujet de réflexion ou développement construit nécessitant des arguments'}.
-Donne uniquement le texte de la question, sans aucune introduction, salutation ni conclusion.`;
+            const prompt = `Tu es un professeur d'école expert du Brevet des collèges en France (Mathématiques, Français, Histoire-Géographie/EMC et Sciences).
+Génère un exercice ou une question unique, pertinente et strictement conforme au programme officiel de Troisième pour la matière suivante : ${subject}.
+
+Voici les règles de format selon la matière :
+- Si la matière est "maths" : 
+  * Format courte : Génère une question flash (calcul mental, petite équation, règle de géométrie simple).
+  * Format longue : Génère un vrai problème de Brevet détaillé (Thalès, Pythagore, probabilités, fonctions ou statistiques).
+- Si la matière est "francais" : 
+  * Format courte : Une question rapide de grammaire, conjugaison, orthographe ou réécriture.
+  * Format longue : Un court extrait littéraire suivi d'une question d'analyse ou de compréhension de texte.
+- Si la matière est "histoire" ou "sciences" : Reste sur les formats standards du Brevet.
+
+Donne uniquement le texte de l'exercice ou de la question, sans aucune introduction, salutation ni conclusion.`;
 
             const data = await postToGroq({
                 model: MODEL_NAME,
@@ -82,8 +91,11 @@ Format de l'exercice : ${format}
 Question d'origine : ${question}
 Réponse proposée par l'élève : ${userAnswer}
 
-Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété).
-À la toute fin de ton message, tu dois obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
+Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété ou corrigé).
+Si la matière est "maths", sois très attentif à la logique du raisonnement en plus du résultat final.
+Si la matière est "francais", prends bien en compte l'orthographe et la structure de la phrase.
+
+À la toute fin de ton message, tu devez obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
 
             const data = await postToGroq({
                 model: MODEL_NAME,
