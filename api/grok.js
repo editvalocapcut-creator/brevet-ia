@@ -13,8 +13,8 @@ module.exports = async function (req, res) {
         return res.status(500).json({ error: "La clé GROK_API_KEY est introuvable dans les variables Vercel." });
     }
 
-    // Utilisation du modèle le plus récent et stable de Groq
-    const MODEL_NAME = "llama-3.3-70b-versatile";
+    // Utilisation du modèle Gemma, le plus accessible et compatible avec les comptes gratuits
+    const MODEL_NAME = "gemma2-9b-it";
 
     try {
         // 1. GÉNÉRATION DE QUESTION
@@ -40,17 +40,17 @@ Donne uniquement le texte de la question, sans aucune introduction, salutation n
             const data = await response.json();
             
             if (data.error) {
-                return res.status(400).json({ error: `Erreur API Groq: ${data.error.message}` });
+                return res.status(400).json({ error: `Erreur Groq: ${data.error.message} (Code: ${data.error.code})` });
             }
 
             if (data.choices && data.choices[0]) {
                 return res.status(200).json({ question: data.choices[0].message.content.trim() });
             } else {
-                return res.status(500).json({ error: "Le serveur Groq a renvoyé un format de réponse inconnu." });
+                return res.status(500).json({ error: "Le serveur a renvoyé un format de réponse inconnu." });
             }
         }
 
-        // 2. CORRECTION DE LA RÉPONSE ELEVE
+        // 2. CORRECTION DE LA RÉPONSE
         else if (action === 'correct') {
             const prompt = `Tu es un professeur correcteur officiel du Brevet des collèges. Évalue la réponse de l'élève de manière constructive.
 Matière : ${subject}
@@ -59,7 +59,7 @@ Question d'origine : ${question}
 Réponse proposée par l'élève : ${userAnswer}
 
 Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété).
-À la toute fin de ton message, tu dois obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
+À la toute fin de ton message, tu doit obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
 
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
@@ -77,7 +77,7 @@ Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être c
             const data = await response.json();
 
             if (data.error) {
-                return res.status(400).json({ error: `Erreur API Groq: ${data.error.message}` });
+                return res.status(400).json({ error: `Erreur Groq: ${data.error.message}` });
             }
 
             if (data.choices && data.choices[0]) {
@@ -88,6 +88,6 @@ Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être c
         }
 
     } catch (err) {
-        return res.status(500).json({ error: `Erreur interne du serveur : ${err.message}` });
+        return res.status(500).json({ error: `Erreur de traitement : ${err.message}` });
     }
 };
