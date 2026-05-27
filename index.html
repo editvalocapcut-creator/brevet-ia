@@ -122,6 +122,8 @@
                     <option value="Géographie">Géographie</option>
                     <option value="EMC">EMC</option>
                     <option value="Sciences">Sciences (SVT / Physique / Techno)</option>
+                    <option value="Mathématiques">Mathématiques</option>
+                    <option value="Français">Français</option>
                 </select>
             </div>
             <div>
@@ -163,6 +165,8 @@
                     <th>Géo</th>
                     <th>EMC</th>
                     <th>Sciences</th>
+                    <th>Maths</th>
+                    <th>Français</th>
                     <th>Total</th>
                 </tr>
             </thead>
@@ -177,7 +181,6 @@
     let currentUser = null;
     let currentQuestion = "";
 
-    // Fonction globale de connexion
     async function handleLogin() {
         const pseudo = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
@@ -197,7 +200,7 @@
             const res = await fetch('/api/auth.js', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'login', pseudo, password }) // CORRIGÉ : 'login' au lieu de 'login_register'
+                body: JSON.stringify({ action: 'login', pseudo, password })
             });
             const data = await res.json();
 
@@ -223,7 +226,6 @@
         }
     }
 
-    // Événements d'authentification
     document.getElementById('btn-auth').addEventListener('click', handleLogin);
 
     document.getElementById('password').addEventListener('keyup', (event) => {
@@ -234,7 +236,6 @@
         if (event.key === "Enter") handleLogin();
     });
 
-    // Générer une question via Groq
     document.getElementById('btn-generate').addEventListener('click', async () => {
         const subject = document.getElementById('subject-select').value;
         const format = document.getElementById('format-select').value;
@@ -268,7 +269,6 @@
         }
     });
 
-    // Corriger la réponse et sauvegarder le score
     document.getElementById('btn-correct').addEventListener('click', async () => {
         const subject = document.getElementById('subject-select').value;
         const format = document.getElementById('format-select').value;
@@ -305,7 +305,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        action: 'updateScore', // CORRIGÉ : 'updateScore' au lieu de 'save_score'
+                        action: 'updateScore', 
                         pseudo: currentUser.pseudo, 
                         subject, 
                         score: pointsAttribues 
@@ -327,17 +327,14 @@
         }
     });
 
-    // Charger le classement général
     async function loadLeaderboard() {
         try {
             const res = await fetch('/api/auth.js', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'getLeaderboard' }) // CORRIGÉ : 'getLeaderboard' au lieu de 'get_leaderboard'
+                body: JSON.stringify({ action: 'getLeaderboard' })
             });
             const data = await res.json();
-            
-            // On gère les deux formats possibles de retour (tableau direct ou objet contenant le tableau)
             const leaderboardData = Array.isArray(data) ? data : (data.leaderboard || []);
             
             const tbody = document.getElementById('leaderboard-body');
@@ -356,6 +353,8 @@
                     <td>${row.score_geographie || 0}</td>
                     <td>${row.score_emc || 0}</td>
                     <td>${row.score_sciences || 0}</td>
+                    <td>${row.score_mathematiques || 0}</td>
+                    <td>${row.score_francais || 0}</td>
                     <td><span class="badge">${row.score_total || 0} pts</span></td>
                 `;
                 tbody.appendChild(tr);
