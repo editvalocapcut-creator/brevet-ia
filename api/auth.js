@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY; 
@@ -54,6 +54,8 @@ export default async function handler(req, res) {
                         score_geographie: 0, 
                         score_emc: 0, 
                         score_sciences: 0, 
+                        score_mathematiques: 0, // Rajouté pour l'inscription
+                        score_francais: 0,      // Rajouté pour l'inscription
                         score_total: 0 
                     }])
                     .select();
@@ -84,9 +86,12 @@ export default async function handler(req, res) {
             const user = users[0];
             let column = 'score_histoire';
             const cleanSubject = (subject || '').toLowerCase();
+            
             if (cleanSubject.includes('géo')) column = 'score_geographie';
             if (cleanSubject.includes('emc')) column = 'score_emc';
             if (cleanSubject.includes('science')) column = 'score_sciences';
+            if (cleanSubject.includes('math')) column = 'score_mathematiques'; // Rajouté pour détecter les maths
+            if (cleanSubject.includes('franc') || cleanSubject.includes('français')) column = 'score_francais'; // Rajouté pour détecter le français
 
             const pointsToAdd = parseInt(score, 10) || 0;
             const newSubjectScore = (user[column] || 0) + pointsToAdd;
@@ -111,7 +116,7 @@ export default async function handler(req, res) {
         else if (action === 'getLeaderboard') {
             const { data: leaderboard, error: boardError } = await supabase
                 .from('classement_brevet')
-                .select('pseudo, score_histoire, score_geographie, score_emc, score_sciences, score_total')
+                .select('pseudo, score_histoire, score_geographie, score_emc, score_sciences, score_mathematiques, score_francais, score_total') // Colonnes rajoutées ici
                 .order('score_total', { ascending: false })
                 .limit(10);
 
