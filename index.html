@@ -13,7 +13,6 @@
         textarea { height: 120px; }
         .hidden { display: none; }
         
-        /* Ton fameux tableau noir des scores */
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #111; color: white; border-radius: 8px; overflow: hidden; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
         th { background: #222; color: #0070f3; }
@@ -102,27 +101,3 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'correct', subject: currentSubject, format: format, question: question, userAnswer: answer })
             });
-            const data = await res.json();
-            document.getElementById('correction-text').innerText = data.correction || data.error;
-
-            // Récupère la note et l'affiche directement dans ton tableau noir
-            if (data.correction) {
-                const match = data.correction.match(/Note\s*:\s*(\d+)\/5/i);
-                if (match) {
-                    const note = match[1] + "/5";
-                    document.getElementById('score-' + currentSubject).innerText = note;
-                    saveToDatabase(currentSubject, match[1]);
-                }
-            }
-        }
-
-        async function saveToDatabase(subject, note) {
-            await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subject: subject, note: parseInt(note) })
-            });
-        }
-    </script>
-</body>
-</html>
