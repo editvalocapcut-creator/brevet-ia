@@ -33,14 +33,15 @@ export default async function handler(req, res) {
             }
         }
 
-        const groqResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+        // CORRIGÉ : On se connecte maintenant sur le vrai serveur de Groq Cloud
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'grok-2-latest',
+                model: 'llama-3.3-70b-specdec', // Modèle ultra-rapide et performant de Groq Cloud
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
@@ -51,10 +52,9 @@ export default async function handler(req, res) {
 
         const groqData = await groqResponse.json();
         
-        // Sécurité : On vérifie que la réponse de Groq contient bien le texte attendu
         if (!groqData.choices || !groqData.choices[0] || !groqData.choices[0].message) {
             console.error("Réponse invalide de l'API Groq :", groqData);
-            return res.status(500).json({ error: "L'API de Groq a renvoyé une réponse inattendue." });
+            return res.status(500).json({ error: "L'API a renvoyé une réponse inattendue." });
         }
 
         const responseText = groqData.choices[0].message.content;
