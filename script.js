@@ -1,99 +1,91 @@
-const API_URL = "/api/grok"; // On appelle notre fonction serveur sécurisée
+document.addEventListener('DOMContentLoaded', () => {
+    const subjectSelect = document.getElementById('subject-select');
+    const formatSelect = document.getElementById('format-select'); // Sélection du format
+    const startBtn = document.getElementById('start-btn');
+    const quizBox = document.getElementById('quiz-box');
+    const questionText = document.getElementById('question-text');
+    const userAnswer = document.getElementById('user-answer');
+    const submitBtn = document.getElementById('submit-btn');
+    const correctionBox = document.getElementById('correction-box');
+    const correctionText = document.getElementById('correction-text');
+    const nextBtn = document.getElementById('next-btn');
 
-let currentSubject = "Mathématiques";
-let currentQuestion = "";
+    let currentQuestion = "";
 
-const navButtons = document.querySelectorAll('.nav-btn');
-const subjectTitle = document.getElementById('current-subject');
-const generateBtn = document.getElementById('generate-btn');
-const submitBtn = document.getElementById('submit-btn');
-const restartBtn = document.getElementById('restart-btn');
-const startZone = document.getElementById('start-zone');
-const loadingDiv = document.getElementById('loading');
-const loadingText = document.getElementById('loading-text');
-const exerciseCard = document.getElementById('exercise-card');
-const questionText = document.getElementById('question-text');
-const userAnswer = document.getElementById('user-answer');
-const correctionCard = document.getElementById('correction-card');
-const correctionText = document.getElementById('correction-text');
+    // 1. Générer une question
+    startBtn.addEventListener('click', async () => {
+        const subject = subjectSelect.value;
+        const format = formatSelect.value; // Récupère "courte" ou "longue"
 
-navButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        navButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentSubject = btn.getAttribute('data-subject');
-        subjectTitle.textContent = currentSubject;
-        resetInterface();
+        startBtn.disabled = true;
+        startBtn.innerText = "Génération...";
+        
+        try {
+            const response = await fetch('/api/grok', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'generate', subject: subject, format: format })
+            });
+
+            const data = await response.json();
+            currentQuestion = data.question;
+            
+            questionText.innerText = currentQuestion;
+            userAnswer.value = "";
+            quizBox.classList.remove('hidden');
+            correctionBox.classList.add('hidden');
+            
+            // Scroll automatique vers la question
+            quizBox.scrollIntoView({ behavior: 'smooth' });
+        } catch (error) {
+            alert("Erreur lors de la génération de la question. Réessaie !");
+            console.error(error);
+        } finally {
+            startBtn.disabled = false;
+            startBtn.innerText = "Générer une question";
+        }
+    });
+
+    // 2. Corriger la réponse
+    submitBtn.addEventListener('click', async () => {
+        const answer = userAnswer.value.trim();
+        if (!answer) {
+            alert("Écris d'abord une réponse !");
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Correction en cours...";
+
+        try {
+            const response = await fetch('/api/grok', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'correct', 
+                    subject: subjectSelect.value, 
+                    question: currentQuestion, 
+                    userAnswer: answer,
+                    format: formatSelect.value // On envoie aussi le format pour adapter la sévérité de la correction
+                })
+            });
+
+            const data = await response.json();
+            correctionText.innerHTML = data.correction.replace(/\n/g, '<br>');
+            correctionBox.classList.remove('hidden');
+            
+            correctionBox.scrollIntoView({ behavior: 'smooth' });
+        } catch (error) {
+            alert("Erreur lors de la correction.");
+            console.error(error);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Corriger ma réponse";
+        }
+    });
+
+    // 3. Question suivante
+    nextBtn.addEventListener('click', () => {
+        startBtn.click();
     });
 });
-
-function resetInterface() {
-    startZone.classList.remove('hidden');
-    exerciseCard.classList.add('hidden');
-    correctionCard.classList.add('hidden');
-    loadingDiv.classList.add('hidden');
-    userAnswer.value = "";
-}
-
-async function callBackend(messages) {
-    try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: messages })
-        });
-
-        if (!response.ok) throw new Error("Erreur serveur réseau.");
-        const data = await response.json();
-        return data.choices[0].message.content;
-    } catch (error) {
-        alert("Impossible de joindre l'IA : " + error.message);
-        resetInterface();
-        return null;
-    }
-}
-
-generateBtn.addEventListener('click', async () => {
-    startZone.classList.add('hidden');
-    loadingText.textContent = "L'IA prépare ton sujet... 📝";
-    loadingDiv.classList.remove('hidden');
-
-    const prompts = [
-        { role: "system", content: "Tu es un prof qui génère des exercices de niveau brevet des collèges. Donne juste l'énoncé et les questions, pas la correction." },
-        { role: "user", content: `Génère un exercice complet et inédit pour la matière : ${currentSubject}.` }
-    ];
-
-    const result = await callBackend(prompts);
-    loadingDiv.classList.add('hidden');
-
-    if (result) {
-        currentQuestion = result;
-        questionText.innerHTML = result.replace(/\n/g, "<br>");
-        exerciseCard.classList.remove('hidden');
-    }
-});
-
-submitBtn.addEventListener('click', async () => {
-    const answer = userAnswer.value.trim();
-    if (!answer) return alert("Rédige une réponse avant d'envoyer !");
-
-    loadingText.textContent = "Analyse de ta copie en cours... 🧐";
-    loadingDiv.classList.remove('hidden');
-
-    const prompts = [
-        { role: "system", content: "Tu es un correcteur du Brevet. Analyse la réponse de l'élève par rapport à l'exercice. Donne les points forts, corrige les erreurs et donne une note sur 20." },
-        { role: "user", content: `Sujet:\n${currentQuestion}\n\nRéponse élève:\n${answer}` }
-    ];
-
-    const result = await callBackend(prompts);
-    loadingDiv.classList.add('hidden');
-
-    if (result) {
-        let cleanText = result.replace(/\n/g, "<br>").replace(/### (.*?)(<br>|$)/g, "<h4>$1</h4>");
-        correctionText.innerHTML = cleanText;
-        correctionCard.classList.remove('hidden');
-        correctionCard.scrollIntoView({ behavior: 'smooth' });
-    }
-});
-
-restartBtn.addEventListener('click', resetInterface);
