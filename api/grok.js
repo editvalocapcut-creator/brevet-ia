@@ -1,3 +1,5 @@
+const https = require('https');
+
 module.exports = async function (req, res) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,8 +15,39 @@ module.exports = async function (req, res) {
         return res.status(500).json({ error: "La clé GROK_API_KEY est introuvable dans les variables Vercel." });
     }
 
-    // Changement ici : utilisation du modèle Llama 3.1 8B qui est ultra rapide, gratuit et actif
+    // Modèle Llama 3.1 ultra rapide et actif sur Groq
     const MODEL_NAME = "llama-3.1-8b-instant";
+
+    // Fonction d'aide pour faire un POST HTTPS propre compatible toutes versions Node.js
+    const postToGroq = (bodyData) => {
+        return new Promise((resolve, reject) => {
+            const options = {
+                hostname: 'api.groq.com',
+                path: '/openai/v1/chat/completions',
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey.trim()}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            const request = https.request(options, (response) => {
+                let data = '';
+                response.on('data', (chunk) => { data += chunk; });
+                response.on('end', () => {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch (e) {
+                        reject(new Error("Réponse de l'API Groq illisible (JSON invalide)"));
+                    }
+                });
+            });
+
+            request.on('error', (err) => reject(err));
+            request.write(JSON.stringify(bodyData));
+            request.end();
+        });
+    };
 
     try {
         // 1. GÉNÉRATION DE QUESTION
@@ -24,20 +57,11 @@ Génère une question unique, pertinente et conforme au programme officiel pour 
 Format demandé : ${format === 'courte' ? 'Une question flash simple et directe' : 'Un sujet de réflexion ou développement construit nécessitant des arguments'}.
 Donne uniquement le texte de la question, sans aucune introduction, salutation ni conclusion.`;
 
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey.trim()}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    model: MODEL_NAME,
-                    messages: [{ role: "user", content: prompt }],
-                    temperature: 0.7
-                })
+            const data = await postToGroq({
+                model: MODEL_NAME,
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7
             });
-
-            const data = await response.json();
             
             if (data.error) {
                 return res.status(400).json({ error: `Erreur Groq: ${data.error.message} (Code: ${data.error.code})` });
@@ -59,22 +83,13 @@ Question d'origine : ${question}
 Réponse proposée par l'élève : ${userAnswer}
 
 Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété).
-À la toute fin de ton message, tu doit obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
+À la toute fin de ton message, tu dois obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
 
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey.trim()}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    model: MODEL_NAME,
-                    messages: [{ role: "user", content: prompt }],
-                    temperature: 0.4
-                })
+            const data = await postToGroq({
+                model: MODEL_NAME,
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.4
             });
-
-            const data = await response.json();
 
             if (data.error) {
                 return res.status(400).json({ error: `Erreur Groq: ${data.error.message}` });
