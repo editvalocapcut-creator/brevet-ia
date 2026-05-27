@@ -48,16 +48,22 @@ module.exports = async function (req, res) {
         });
     };
 
-    // Traduction explicite des matières pour guider l'IA sans ambiguïté
-    let matiereComplete = subject;
-    if (subject === 'emc') {
-        matiereComplete = "Enseignement Moral et Civique (EMC, citoyenneté et valeurs de la République)";
-    } else if (subject === 'mathematiques') {
-        matiereComplete = "Mathématiques";
-    } else if (subject === 'francais') {
-        matiereComplete = "Français (Langue, Grammaire et Littérature)";
-    } else if (subject === 'sciences') {
+    // Nettoyage et traduction stricte de la matière pour guider l'IA
+    const cleanSubject = (subject || '').toLowerCase().trim();
+    let matiereComplete = "Histoire";
+
+    if (cleanSubject === 'histoire') {
+        matiereComplete = "Histoire (Programme de Troisième France)";
+    } else if (cleanSubject.includes('géo')) {
+        matiereComplete = "Géographie (Programme de Troisième France)";
+    } else if (cleanSubject === 'emc' || cleanSubject.includes('civique')) {
+        matiereComplete = "Enseignement Moral et Civique (EMC, citoyenneté, valeurs de la République, institutions, Droits de l'homme)";
+    } else if (cleanSubject.includes('science')) {
         matiereComplete = "Sciences (SVT, Physique-Chimie, Technologie)";
+    } else if (cleanSubject.includes('math')) {
+        matiereComplete = "Mathématiques (Algèbre, Géométrie, Équations de Troisième)";
+    } else if (cleanSubject.includes('franc')) {
+        matiereComplete = "Français (Langue, Grammaire, Dictée et Littérature de Troisième)";
     }
 
     try {
@@ -65,7 +71,8 @@ module.exports = async function (req, res) {
         if (action === 'generate') {
             const prompt = `Tu es un professeur de l'Éducation nationale pour des élèves de Troisième préparant le Brevet des collèges en France.
 Génère une question ou un exercice unique, pertinent et strictement conforme au programme officiel pour la matière suivante : ${matiereComplete}.
-Format demandé : ${format === 'courte' ? 'Une question flash simple et directe (par exemple : calcul ou règle rapide pour les mathématiques, grammaire ou conjugaison pour le français)' : 'Un sujet développé (par exemple : problème écrit structuré pour les mathématiques, analyse de texte ou réflexion courte pour le français)'}.
+IMPORTANT POUR L'EMC : Ne confonds pas avec les mathématiques ou le français. Pose une question sur la citoyenneté, la Constitution, le parcours citoyen ou les symboles républicains.
+Format demandé : ${format === 'courte' ? 'Une question flash simple et directe nécessitant une réponse courte.' : 'Un sujet développé (par exemple : une question de réflexion ou un paragraphe rédigé structuré).'}.
 Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduction, salutation ni conclusion.`;
 
             const data = await postToGroq({
@@ -93,7 +100,7 @@ Format de l'exercice : ${format}
 Question d'origine : ${question}
 Réponse proposée par l'élève : ${userAnswer}
 
-Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété). Pour le français, prends en compte la rédaction et l'orthographe. Pour les mathématiques, valide la justesse du raisonnement logique.
+Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété). S'il s'agit d'EMC, vérifie la justesse des connaissances civiques et républicaines.
 À la toute fin de ton message, tu dois obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
 
             const data = await postToGroq({
