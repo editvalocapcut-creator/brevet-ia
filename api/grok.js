@@ -13,8 +13,8 @@ module.exports = async function (req, res) {
         return res.status(500).json({ error: "La clé GROK_API_KEY est introuvable dans les variables Vercel." });
     }
 
-    // Utilisation du modèle Gemma, le plus accessible et compatible avec les comptes gratuits
-    const MODEL_NAME = "gemma2-9b-it";
+    // Changement ici : utilisation du modèle Llama 3.1 8B qui est ultra rapide, gratuit et actif
+    const MODEL_NAME = "llama-3.1-8b-instant";
 
     try {
         // 1. GÉNÉRATION DE QUESTION
