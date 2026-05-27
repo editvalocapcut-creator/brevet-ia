@@ -48,22 +48,24 @@ module.exports = async function (req, res) {
         });
     };
 
-    // Nettoyage et traduction stricte de la matière pour guider l'IA
+    // Nettoyage et isolation stricte de la matière (Finie la confusion !)
     const cleanSubject = (subject || '').toLowerCase().trim();
-    let matiereComplete = "Histoire";
+    let matiereComplete = "";
 
     if (cleanSubject === 'histoire') {
-        matiereComplete = "Histoire (Programme de Troisième France)";
-    } else if (cleanSubject.includes('géo')) {
-        matiereComplete = "Géographie (Programme de Troisième France)";
-    } else if (cleanSubject === 'emc' || cleanSubject.includes('civique')) {
-        matiereComplete = "Enseignement Moral et Civique (EMC, citoyenneté, valeurs de la République, institutions, Droits de l'homme)";
-    } else if (cleanSubject.includes('science')) {
-        matiereComplete = "Sciences (SVT, Physique-Chimie, Technologie)";
-    } else if (cleanSubject.includes('math')) {
-        matiereComplete = "Mathématiques (Algèbre, Géométrie, Équations de Troisième)";
-    } else if (cleanSubject.includes('franc')) {
-        matiereComplete = "Français (Langue, Grammaire, Dictée et Littérature de Troisième)";
+        matiereComplete = "Histoire (Programme officiel de Troisième, France)";
+    } else if (cleanSubject === 'géographie' || cleanSubject === 'geographie') {
+        matiereComplete = "Géographie (Programme officiel de Troisième, France)";
+    } else if (cleanSubject === 'emc') {
+        matiereComplete = "Enseignement Moral et Civique (EMC, citoyenneté, valeurs de la République, institutions françaises, Droits de l'homme. Ne pas générer de mathématiques ni de français !)";
+    } else if (cleanSubject === 'sciences') {
+        matiereComplete = "Sciences (SVT, Physique-Chimie, Technologie de niveau Troisième)";
+    } else if (cleanSubject === 'mathematiques' || cleanSubject === 'mathématiques') {
+        matiereComplete = "Mathématiques (Algèbre, Géométrie, Calculs, Équations de niveau Troisième. Strictement des mathématiques, pas d'histoire ni d'EMC !)";
+    } else if (cleanSubject === 'francais' || cleanSubject === 'français') {
+        matiereComplete = "Français (Langue, Grammaire, Conjugaison, Analyse de texte de niveau Troisième)";
+    } else {
+        matiereComplete = "Histoire-Géographie"; // Sécurité par défaut si vide
     }
 
     try {
@@ -71,8 +73,8 @@ module.exports = async function (req, res) {
         if (action === 'generate') {
             const prompt = `Tu es un professeur de l'Éducation nationale pour des élèves de Troisième préparant le Brevet des collèges en France.
 Génère une question ou un exercice unique, pertinent et strictement conforme au programme officiel pour la matière suivante : ${matiereComplete}.
-IMPORTANT POUR L'EMC : Ne confonds pas avec les mathématiques ou le français. Pose une question sur la citoyenneté, la Constitution, le parcours citoyen ou les symboles républicains.
-Format demandé : ${format === 'courte' ? 'Une question flash simple et directe nécessitant une réponse courte.' : 'Un sujet développé (par exemple : une question de réflexion ou un paragraphe rédigé structuré).'}.
+IMPORTANT : Respecte scrupuleusement la matière demandée. Si la matière est Mathématiques, fais de l'algèbre ou de la géométrie. Si la matière est EMC, pose une question de citoyenneté. Ne mélange pas les matières.
+Format demandé : ${format === 'courte' ? 'Une question flash simple et directe nécessitant une réponse courte.' : 'Un sujet développé (par exemple : un problème écrit structuré ou une question de réflexion rédigée).'}.
 Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduction, salutation ni conclusion.`;
 
             const data = await postToGroq({
@@ -100,7 +102,7 @@ Format de l'exercice : ${format}
 Question d'origine : ${question}
 Réponse proposée par l'élève : ${userAnswer}
 
-Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété). S'il s'agit d'EMC, vérifie la justesse des connaissances civiques et républicaines.
+Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété). Adapte tes critères à la matière (justesse du raisonnement pour les maths, orthographe et syntaxe pour le français, connaissances pour l'histoire/EMC).
 À la toute fin de ton message, tu dois obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
 
             const data = await postToGroq({
