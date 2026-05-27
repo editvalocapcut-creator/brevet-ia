@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
         startBtn.innerText = "Génération...";
         
         try {
-            const response = await fetch('/api/grok', {
+            // CORRIGÉ : Ajout du .js à la fin du chemin de l'API
+            const response = await fetch('/api/grok.js', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'generate', subject: subject, format: format })
@@ -58,7 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.innerText = "Correction en cours...";
 
         try {
-            const response = await fetch('/api/grok', {
+            // CORRIGÉ : Ajout du .js à la fin du chemin de l'API
+            const response = await fetch('/api/grok.js', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -66,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     subject: subjectSelect.value, 
                     question: currentQuestion, 
                     userAnswer: answer,
-                    format: formatSelect.value // On envoie aussi le format pour adapter la sévérité de la correction
+                    format: formatSelect.value
                 })
             });
 
