@@ -102,7 +102,7 @@ Format de l'exercice : ${format}
 Question d'origine : ${question}
 Réponse proposée par l'élève : ${userAnswer}
 
-Rédige des remarques bienveillantes (ce qui est maîtrisé, ce qui doit être complété). Adapte tes critères à la matière (justesse du raisonnement pour les maths, orthographe et syntaxe pour le français, connaissances pour l'histoire/EMC).
+Rédige des remarques constructive. Adapte tes critères à la matière (justesse du raisonnement pour les maths, orthographe et syntaxe pour le français, connaissances pour l'histoire/EMC).
 À la toute fin de ton message, tu dois obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
 
             const data = await postToGroq({
