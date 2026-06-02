@@ -96,7 +96,7 @@ Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduct
 
         // 2. CORRECTION DE LA RÉPONSE
         else if (action === 'correct') {
-            const prompt = `Tu es un professeur correcteur officiel du Brevet des collèges. Évalue la réponse de l'élève de manière constructive.
+            const prompt = `Tu es un professeur correcteur officiel du Brevet des collèges. Évalue la réponse de l'élève de manière constructive, impartiale comme un vrai corrigeur de brevet en étant dur.
 Matière : ${matiereComplete}
 Format de l'exercice : ${format}
 Question d'origine : ${question}
