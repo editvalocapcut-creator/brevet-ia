@@ -71,7 +71,7 @@ module.exports = async function (req, res) {
     try {
         // 1. GÉNÉRATION DE QUESTION
         if (action === 'generate') {
-            const prompt = `Tu es un professeur de l'Éducation nationale pour des élèves de Troisième préparant le Brevet des collèges en France.
+            const prompt = `Tu es un professeur de l'Éducation nationale pour des élèves de Troisième n'oublie pas ca, je veut que tu fasse des question vraiment adapté a ce niveau préparant le Brevet des collèges en France.
 Génère une question ou un exercice unique, pertinent et strictement conforme au programme officiel pour la matière suivante : ${matiereComplete}.
 IMPORTANT : Respecte scrupuleusement la matière demandée. Si la matière est Mathématiques, fais de l'algèbre ou de la géométrie. Si la matière est EMC, pose une question de citoyenneté. Ne mélange pas les matières.
 Format demandé : ${format === 'courte' ? 'Une question flash simple et directe nécessitant une réponse courte.' : 'Un sujet développé (par exemple : un problème écrit structuré ou une question de réflexion rédigée).'}.
@@ -96,7 +96,7 @@ Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduct
 
         // 2. CORRECTION DE LA RÉPONSE
         else if (action === 'correct') {
-            const prompt = `Tu es un professeur correcteur officiel du Brevet des collèges. Évalue la réponse de l'élève de manière constructive, impartiale comme un vrai corrigeur de brevet en étant dur.
+            const prompt = `Tu es un professeur correcteur officiel du Brevet des collèges je veut que tu fasse des question vraiment adapté a ce niveau. Évalue la réponse de l'élève de manière constructive, impartiale comme un vrai corrigeur de brevet en étant dur.
 Matière : ${matiereComplete}
 Format de l'exercice : ${format}
 Question d'origine : ${question}
