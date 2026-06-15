@@ -75,7 +75,7 @@ module.exports = async function (req, res) {
 Génère une question ou un exercice unique, pertinent et strictement conforme au programme officiel pour la matière suivante : ${matiereComplete}.
 IMPORTANT : Respecte scrupuleusement la matière demandée. Si la matière est Mathématiques, fais de l'algèbre ou de la géométrie. Si la matière est EMC, pose une question de citoyenneté. Ne mélange pas les matières.
 Format demandé : ${format === 'courte' ? 'Une question flash simple et directe nécessitant une réponse courte.' : 'Un sujet développé (par exemple : un problème écrit structuré ou une question de réflexion rédigée).'}.
-Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduction, salutation ni conclusion.`;
+Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduction, salutation ni conclusion, sois extremement dure en terme de correction, agit comme un correcteur , base toi sur les brevet blanc passé.`;
 
             const data = await postToGroq({
                 model: MODEL_NAME,
@@ -96,14 +96,14 @@ Donne uniquement le texte de la question ou de l'énoncé, sans aucune introduct
 
         // 2. CORRECTION DE LA RÉPONSE
         else if (action === 'correct') {
-            const prompt = `Tu es un professeur correcteur officiel du Brevet des collèges je veut que tu fasse des question vraiment adapté a ce niveau. Évalue la réponse de l'élève de manière constructive, impartiale comme un vrai corrigeur de brevet en étant dur.
+            const prompt = `Tu es un professeur correcteur officiel du Brevet des collèges je veut que tu fasse des question vraiment adapté a ce niveau. Évalue la réponse de l'élève de manière constructive, impartiale , sois extremement dur t'elle qu'un corrigeur du brevet..
 Matière : ${matiereComplete}
 Format de l'exercice : ${format}
 Question d'origine : ${question}
 Réponse proposée par l'élève : ${userAnswer}
 
 Rédige des remarques constructive. Adapte tes critères à la matière (justesse du raisonnement pour les maths, orthographe et syntaxe pour le français, connaissances pour l'histoire/EMC).
-À la toute fin de ton message, tu dois obligatoirement écrire la mention exacte suivante : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
+À la toute fin de ton message, tu dois obligatoirement écrire la mention exacte suivante, noublie pas de noter durement. : "Note : X/5" (remplace X par une note entière de 0 à 5).`;
 
             const data = await postToGroq({
                 model: MODEL_NAME,
